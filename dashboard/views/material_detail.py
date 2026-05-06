@@ -19,13 +19,13 @@ def render(material_id: int) -> None:
 
     cols = st.columns(4)
     cols[0].caption("習熟度")
-    cols[0].write(MASTERY_LABELS[material["mastery_level"]])
+    cols[0].markdown(f"<span style='font-size:1.4rem'>{MASTERY_LABELS[material['mastery_level']]}</span>", unsafe_allow_html=True)
     cols[1].caption("学習回数")
-    cols[1].write(str(material["total_appearances"]))
+    cols[1].markdown(f"<span style='font-size:1.4rem'>{material['total_appearances']}</span>", unsafe_allow_html=True)
     cols[2].caption("最終学習")
-    cols[2].write(_fmt_dt(material["last_appeared_at"]))
+    cols[2].markdown(f"<span style='font-size:1.4rem'>{_fmt_dt(material['last_appeared_at'])}</span>", unsafe_allow_html=True)
     cols[3].caption("作成")
-    cols[3].write(_fmt_dt(material["created_at"]))
+    cols[3].markdown(f"<span style='font-size:1.4rem'>{_fmt_dt(material['created_at'])}</span>", unsafe_allow_html=True)
 
     if material["started_at"]:
         st.caption(f"学習開始: {material['started_at']}　学習完了: {material['ended_at'] or '—'}")
