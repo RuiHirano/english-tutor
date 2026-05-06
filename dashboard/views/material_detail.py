@@ -18,10 +18,14 @@ def render(material_id: int) -> None:
     st.title(material["title"])
 
     cols = st.columns(4)
-    cols[0].metric("習熟度", MASTERY_LABELS[material["mastery_level"]])
-    cols[1].metric("学習回数", material["total_appearances"])
-    cols[2].metric("最終学習", _fmt_dt(material["last_appeared_at"]))
-    cols[3].metric("作成", _fmt_dt(material["created_at"]))
+    cols[0].caption("習熟度")
+    cols[0].write(MASTERY_LABELS[material["mastery_level"]])
+    cols[1].caption("学習回数")
+    cols[1].write(str(material["total_appearances"]))
+    cols[2].caption("最終学習")
+    cols[2].write(_fmt_dt(material["last_appeared_at"]))
+    cols[3].caption("作成")
+    cols[3].write(_fmt_dt(material["created_at"]))
 
     if material["started_at"]:
         st.caption(f"学習開始: {material['started_at']}　学習完了: {material['ended_at'] or '—'}")
