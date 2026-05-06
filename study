@@ -1,0 +1,18 @@
+#!/bin/bash
+# English Mentor - Study Planner launcher
+# Starts Streamlit dashboard in background, then launches kiro with study-planner agent
+
+cd "$(dirname "$0")"
+
+# Start dashboard if not already running
+if pgrep -f "streamlit run dashboard/app.py" >/dev/null 2>&1; then
+  echo "✓ Dashboard already running (http://localhost:8501)"
+else
+  streamlit run dashboard/app.py --server.headless true &>/dev/null &
+  DASH_PID=$!
+  trap "kill $DASH_PID 2>/dev/null" EXIT
+  echo "✓ Dashboard started (http://localhost:8501)"
+fi
+
+# Launch kiro with study-planner agent
+exec kiro-cli chat --agent study-planner
