@@ -38,7 +38,7 @@ fi
 # Launch the chosen runner with the english-tutor agent
 case "$RUNNER" in
   claude)
-    exec claude "english-tutor エージェントを使って学習を始めてください。"
+    exec claude "/english-tutor"
     ;;
   kiro)
     exec kiro-cli chat --agent english-tutor "学習を始めてください。"
