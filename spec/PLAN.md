@@ -136,5 +136,225 @@
 
 ## 5. ディレクトリ構成
 
-未定
+```
+english-tutor/
+├── README.md
+├── pyproject.toml
+├── CLAUDE.md                          # flow-controller の常駐指示（Day判定・工程順序・全体ルール）
+│
+├── .claude/
+│   └── skills/
+│       ├── start/SKILL.md             # /start：エントリポイント
+│       ├── phase-vocab/SKILL.md       # 工程2：語彙・文法・表現インプット
+│       ├── phase-listening/SKILL.md   # 工程3：多聴
+│       ├── phase-dictation/SKILL.md   # 工程4：精聴・ディクテーション
+│       ├── phase-shadowing/SKILL.md   # 工程5：シャドーイング
+│       ├── phase-speaking/SKILL.md    # 工程6・7：スピーキング・リテンション
+│       ├── phase-review/SKILL.md      # Day 3 復習工程
+│       ├── material-new/SKILL.md      # 工程1：新素材生成の手順
+│       └── question-generate/SKILL.md # 素材から問題化する手順
+│
+├── .kiro/
+│   ├── agents/english-tutor.{json,md} # Kiro エージェント定義
+│   └── skills/                        # .claude/skills と同内容
+│
+├── src/english_tutor/
+│   ├── db/
+│   │   ├── schema.sql                 # 初期スキーマ
+│   │   └── connection.py
+│   ├── flow/day_resolver.py           # 進行中サイクル → 当日メニュー構築
+│   ├── review/spaced_rep.py           # 1d→3d→1w→2w→1m の間隔反復
+│   └── audio/tts.py                   # macOS say ラッパー
+│
+├── dashboard/
+│   ├── app.py                         # Streamlit エントリ
+│   └── pages/                         # progress, weakness, review_pool, materials
+│
+├── config/
+│   └── user.yaml                      # 学習者プロフィール（goal, level, interests）
+│
+├── data/                              # gitignore（.gitkeep のみ追跡）
+│   ├── learning.db                    # SQLite 本体
+│   └── audio/                         # say で生成した音声キャッシュ
+│
+├── tests/
+├── spec/PLAN.md
+└── study                              # 起動シェルスクリプト（Streamlit + Kiro 起動）
+```
+
+### 設計方針
+
+- **メインスレッド = flow-controller**：`CLAUDE.md` に当日の進行ロジックを書き、`/start` で発火する
+- **skill = 工程ごとの手順書**：ユーザーとの一問一答は skill 内で完結（subagent を使わない A 案）
+- **DB アクセスは CLI 抽象を作らない**：
+  - 単純な CRUD（解答記録・出題候補取得）→ skill から `sqlite3 data/learning.db -json "..."` を直接叩く
+  - 複雑なロジック（Day判定・間隔反復スコア更新）→ `python -m english_tutor.flow.day` のように Python モジュールを直接実行
+- **`.claude/skills` を正、`.kiro/skills` をシンボリックリンク**で同期
+
+## 6. データベース設計
+
+SQLite。スキーマは5テーブルでフラットに保つ。固定的な「Day1-3 サイクル」は持たず、questions の出題統計から動的にスコアリングして出題する。
+
+### テーブル一覧
+
+| テーブル | 役割 |
+|---|---|
+| `user_profile` | 学習者設定（singleton 1行） |
+| `materials` | 教材本体（core / extensive） |
+| `sessions` | 学習活動の記録（material × phase × 時刻） |
+| `questions` | 問題 + 出題統計（ask_count, correct_count, last_asked_at） |
+| `answers` | 解答記録（is_correct と feedback） |
+
+### テーブル間の関係
+
+```
+materials  1 ─── N  sessions    （どの素材を学習したか）
+materials  1 ─── N  questions   （素材から生成された問題）
+sessions   1 ─── N  answers     （セッション内で解答した問題）
+questions  1 ─── N  answers     （問題ごとの解答履歴）
+```
+
+- **1セッション = 1素材 × 1フェーズ**。複数素材を続けて多聴したら複数セッション
+- `cycles` テーブルは持たない。「今やるべきこと」は agent が questions の `due_score` と sessions の履歴から推論する
+
+### スキーマ
+
+```sql
+CREATE TABLE user_profile (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  goal TEXT NOT NULL,
+  level TEXT NOT NULL,            -- CEFR (A1〜C2)
+  interests TEXT NOT NULL
+);
+
+CREATE TABLE materials (
+  id INTEGER PRIMARY KEY,
+  kind TEXT NOT NULL CHECK (kind IN ('core','extensive')),
+  title TEXT NOT NULL,
+  transcript TEXT NOT NULL,
+  translation_ja TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE sessions (
+  id INTEGER PRIMARY KEY,
+  material_id INTEGER NOT NULL REFERENCES materials(id),
+  phase TEXT NOT NULL,            -- vocab|listening|dictation|shadowing|speaking|review|extensive_listening
+  started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ended_at TEXT
+);
+
+CREATE TABLE questions (
+  id INTEGER PRIMARY KEY,
+  material_id INTEGER NOT NULL REFERENCES materials(id),
+  phase TEXT NOT NULL,            -- vocab|listening|dictation|speaking
+  subtype TEXT NOT NULL,          -- multiple_choice|fill_blank|ja_to_en|true_false|partial_dictation|function_word|full_dictation|reproduction|retention_use
+  prompt TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  options_json TEXT,              -- 4択 distractors（JSON 配列）
+  tags TEXT,                      -- 'article,preposition,weak_form'（カンマ区切り）
+  ask_count INTEGER NOT NULL DEFAULT 0,
+  correct_count INTEGER NOT NULL DEFAULT 0,
+  last_asked_at TEXT
+);
+
+CREATE TABLE answers (
+  id INTEGER PRIMARY KEY,
+  session_id INTEGER NOT NULL REFERENCES sessions(id),
+  question_id INTEGER NOT NULL REFERENCES questions(id),
+  user_answer TEXT,
+  is_correct INTEGER NOT NULL,    -- 0/1
+  feedback TEXT,
+  answered_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_questions_phase_last_asked ON questions(phase, last_asked_at);
+CREATE INDEX idx_sessions_material ON sessions(material_id, started_at);
+CREATE INDEX idx_answers_question ON answers(question_id);
+```
+
+### 設計上の判断
+
+#### 出題は指数バックオフのスコアリング
+
+固定の `next_review_at` を持たず、出題統計から動的に計算する：
+
+```
+fail_count    = ask_count - correct_count
+interval_days = 2^(correct_count - fail_count)         -- 連続正解で指数的に伸び、失敗で縮む
+                                                       -- (correct - fail) が負になれば 1日未満で再出題
+days_elapsed  = julianday('now') - julianday(last_asked_at)
+due_score     = days_elapsed - interval_days           -- >0 で出題対象、大きいほど優先
+```
+
+新規問題（`last_asked_at IS NULL`）は最大優先で扱う。
+
+出題候補クエリ：
+
+```sql
+SELECT id, prompt, answer, options_json, ask_count, correct_count,
+  CASE
+    WHEN last_asked_at IS NULL THEN 1e9
+    ELSE (julianday('now') - julianday(last_asked_at))
+         - POWER(2, correct_count - (ask_count - correct_count))
+  END AS due_score
+FROM questions
+WHERE phase = :phase
+ORDER BY due_score DESC
+LIMIT :n;
+```
+
+解答時の更新：
+
+```sql
+UPDATE questions
+SET ask_count = ask_count + 1,
+    correct_count = correct_count + :is_correct,
+    last_asked_at = CURRENT_TIMESTAMP
+WHERE id = :id;
+```
+
+#### Day 1/2/3 のリズムは agent が動的に推論
+
+cycles テーブルを持たず、「今やるべき phase」は agent が以下から判断：
+
+- 新素材：vocab/listening/dictation の questions が大量に新規（`last_asked_at IS NULL`）→ 自然に集中学習
+- 数日経過：questions の正解率が上がり due_score が下がる → shadowing/speaking フェーズへ進む判断
+- 1週間以上経過：due_score が高い問題が散在 → 復習中心
+- shadowing/extensive_listening の実施判断：sessions 履歴を見て「最後に shadowing したのはいつか」「多聴回数」を確認
+
+「Day 1/2/3」は強制ではなく、PLAN §3 の学習リズムに沿った agent の判断指針として残す。
+
+#### 「詰まった表現」は `answers` から導出
+
+#### 「詰まった表現」は `answers` から導出
+
+専用テーブル `struggled_expressions` を作らず、`answers` のクエリで導出する。次素材生成時の入力：
+
+```sql
+-- 過去に失敗があり、その後成功していない表現
+SELECT q.answer AS expression, q.prompt AS japanese, MAX(a.answered_at) AS last_failed_at
+FROM questions q
+JOIN answers a ON a.question_id = q.id
+WHERE q.subtype IN ('ja_to_en','reproduction','retention_use')
+  AND a.is_correct = 0
+GROUP BY q.answer
+HAVING NOT EXISTS (
+  SELECT 1 FROM answers a2
+  JOIN questions q2 ON q2.id = a2.question_id
+  WHERE q2.answer = q.answer
+    AND a2.is_correct = 1
+    AND a2.answered_at > MAX(a.answered_at)
+);
+```
+
+`q.answer` の文字列一致で素材横断の同一表現を識別する。questions 挿入時に正規化（trim、末尾ピリオド除去、lowercase）するルールを skill 側で揃える必要がある。
+
+#### リテンションは「1表現 = 1問題」
+
+工程7「A を使って話して」のように1表現ごとに1問。subtype = `retention_use`、answer に対象表現、prompt にお題（テーマ等）。これにより全工程が `questions` + `answers` の単一モデルで処理可能。
+
+#### 多聴セッションも記録
+
+問題なしでも `sessions.phase = 'extensive_listening'` で記録し、累積時間と素材接触履歴を追える。
 
