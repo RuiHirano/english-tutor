@@ -10,7 +10,7 @@
 - **アウトプット仮説（Swain）**：話す・書くことで「言えない部分」に気づき、習得が進む
 - **インタラクション仮説（Long）**：意味交渉を伴う会話が習得を促進
 - **間隔反復**：忘れかけたタイミングでの復習で長期記憶に定着
-- **深い処理（Craik & Lockhart）**：同じ素材を多角的に処理するほど記憶に定着
+- **深い処理（Craik & Lockhart）**：同じ教材を多角的に処理するほど記憶に定着
 
 ## 2. 技術スタック
 
@@ -29,15 +29,15 @@
 ### 前提：パーソナライズ
 学習者の目的（ビジネス・日常会話・旅行など）、レベル、興味分野を初期設定。教材生成時に反映する。
 
-### サイクル構成（1素材を3日で使い倒す）
+### サイクル構成（1教材を3日で使い倒す）
 
 #### Day 1：導入とインプット
 
 **1. 教材作成**
-パーソナライズ設定に基づいてコア素材1本を生成。
+パーソナライズ設定に基づいてコア教材1本を生成。
 
 **2. 語彙・文法・表現のインプット**
-コア素材から重要項目を抽出して問題化。
+コア教材から重要項目を抽出して問題化。
 - 意味選択（4択）
 - 穴埋め
 - 日本語→英語
@@ -45,18 +45,18 @@
 復習プールから過去問題を最大25%混在。
 
 **3. 多聴**
-コア素材で全体把握（2〜3回）。
+コア教材で全体把握（2〜3回）。
 その後以下の問題を出題。
 - 選択式の内容把握（4択）
 - True/False
 
 
-別素材および過去素材の多聴も実施 (1~2回)。
+別教材および過去教材の多聴も実施 (1~2回)。
 こちらは問題必要ない。
 
 
 **4. 精聴・ディクテーション**
-コア素材の細部を聞き取る。
+コア教材の細部を聞き取る。
 - 部分ディクテーション
 - 機能語ディクテーション
 - 全文ディクテーション
@@ -66,13 +66,13 @@
 #### Day 2：自動化とアウトプット
 
 **5. シャドーイング**
-スクリプトなしでコア素材を追いかけて発声。1素材につき3〜5回繰り返し。新素材の後に、復習プールから過去問題を1~2本追加。
+スクリプトなしでコア教材を追いかけて発声。1教材につき3〜5回繰り返し。新教材の後に、復習プールから過去問題を1~2本追加。
 
 **6. スピーキング**
 - 日本語→英語の即答（パターンプラクティス）
 - 音読＋暗唱（リプロダクション）
 
-間違えた表現をデータベースに記録 → 次素材で再出題。
+間違えた表現をデータベースに記録 → 次教材で再出題。
 
 **7. リテンションテスト**
 指定表現を使った自由スピーチ。「today's expressions（〇〇、△△、××）を使って自分の経験を話して」形式。
@@ -82,27 +82,27 @@
 - 精聴の弱点箇所のみ再聴
 - シャドーイング2〜3回
 
-#### Day 4：新素材へ移行
-前のコア素材は復習プールに移行し、間隔反復で再登場する。
+#### Day 4：新教材へ移行
+前のコア教材は復習プールに移行し、間隔反復で再登場する。
 
 ### 1日の学習時間目安
 - Day 1：30〜45分
 - Day 2：30〜45分
 - Day 3：30〜45分
-- 別素材の多聴：通勤中などのスキマ時間で毎日10〜15分
+- 別教材の多聴：通勤中などのスキマ時間で毎日10〜15分
 
 ### 横断的な仕組み
 
 #### 復習プール（間隔反復の管理基盤）
-学習した語彙・問題・素材をすべて登録。間隔反復ロジック（1日→3日→1週間→2週間→1ヶ月）で次回出題日を管理。各工程で新規＋復習プールから出題する。
+学習した語彙・問題・教材をすべて登録。間隔反復ロジック（1日→3日→1週間→2週間→1ヶ月）で次回出題日を管理。各工程で新規＋復習プールから出題する。
 
 - 工程2の語彙：過去項目を最大25%混在
-- 工程4の精聴：過去素材から最大25%混在
-- 工程5のシャドーイング：新素材の後に過去素材1~2本追加
-- 多聴：1ヶ月以上経った素材は「軽く聞き直し」枠で再登場
+- 工程4の精聴：過去教材から最大25%混在
+- 工程5のシャドーイング：新教材の後に過去教材1~2本追加
+- 多聴：1ヶ月以上経った教材は「軽く聞き直し」枠で再登場
 
 #### 言えなかった表現の回収サイクル
-工程6・7で間違えた表現 → DBに記録 → 次素材の工程6・7で再出題。Swainのアウトプット仮説に基づくサイクルの完結。
+工程6・7で間違えた表現 → DBに記録 → 次教材の工程6・7で再出題。Swainのアウトプット仮説に基づくサイクルの完結。
 
 #### 自己モニタリング
 - 正答率の推移グラフ
@@ -149,7 +149,7 @@ english-tutor/
 │   │   └── english-tutor-prompt.md        # flow-controller の常駐指示
 │   └── skills/
 │       ├── start/SKILL.md                 # /start：エントリポイント
-│       ├── material-new/SKILL.md          # 工程1：新素材生成の手順
+│       ├── material-new/SKILL.md          # 工程1：新教材生成の手順
 │       ├── phase-vocab/SKILL.md           # 工程2：語彙・文法・表現インプット
 │       ├── phase-listening/SKILL.md       # 工程3：多聴
 │       ├── phase-dictation/SKILL.md       # 工程4：精聴・ディクテーション
@@ -163,7 +163,7 @@ english-tutor/
 │   │   └── connection.py                  # 接続 + init
 │   ├── flow/
 │   │   ├── profile.py                     # user_profile の読み書き
-│   │   ├── material.py                    # 新素材 + vocabulary_items を一括 INSERT
+│   │   ├── material.py                    # 新教材 + vocabulary_items を一括 INSERT
 │   │   ├── state.py                       # /start 時の状態スナップショット
 │   │   ├── due.py                         # 出題候補スコアリング
 │   │   ├── mistakes.py                    # 未解決ミスの抽出
@@ -177,7 +177,7 @@ english-tutor/
 │   ├── db.py                              # 読み取り専用クエリ
 │   └── views/
 │       ├── home.py                        # 累積統計・習熟度分布・直近活動
-│       └── material_detail.py             # 素材詳細（vocab・session・Q&A）
+│       └── material_detail.py             # 教材詳細（vocab・session・Q&A）
 │
 ├── data/                                  # gitignore（.gitkeep のみ追跡）
 │   ├── learning.db                        # SQLite 本体
@@ -213,14 +213,14 @@ SQLite。スキーマは5テーブルでフラットに保つ。固定的な「D
 ### テーブル間の関係
 
 ```
-materials  1 ─── N  vocabulary_items   （素材から抽出された学習項目）
-materials  1 ─── N  sessions           （どの素材を学習したか）
-materials  1 ─── N  questions          （どの素材を題材にしたか）
+materials  1 ─── N  vocabulary_items   （教材から抽出された学習項目）
+materials  1 ─── N  sessions           （どの教材を学習したか）
+materials  1 ─── N  questions          （どの教材を題材にしたか）
 sessions   1 ─── N  questions          （セッション内で出題したQ&A）
 vocabulary_items 1 ─── N questions     （どの語彙を題材にしたか、語彙系のみ）
 ```
 
-- **1セッション = 1素材 × 1フェーズ**。複数素材を続けて多聴したら複数セッション
+- **1セッション = 1教材 × 1フェーズ**。複数教材を続けて多聴したら複数セッション
 - `cycles` テーブルは持たない。「今やるべきこと」は agent が `vocabulary_items` の due_score と sessions の履歴から推論する
 - 同じ語彙でも毎回新しい問題文・出題形式で出題される（agent が都度生成）。`questions` は再利用されない記録用ログ
 
@@ -239,7 +239,7 @@ CREATE TABLE materials (
   title TEXT NOT NULL,
   script TEXT NOT NULL,
   -- 統計 --
-  total_appearances INTEGER NOT NULL DEFAULT 0,    -- 総学習回数（この素材を扱ったセッション数）
+  total_appearances INTEGER NOT NULL DEFAULT 0,    -- 総学習回数（この教材を扱ったセッション数）
   last_appeared_at TEXT,                            -- 最後に学習した日時
   mastery_level INTEGER NOT NULL DEFAULT 0,        -- 習熟度（0:未学習 / 1:認識 / 2:使用 / 3:自動化）
   started_at TEXT,                                  -- 最初に学習を開始した日時
@@ -340,7 +340,7 @@ WHERE id = :vocabulary_item_id;
 
 `cycles` テーブルを持たず、「今やるべき phase」は agent が以下から判断：
 
-- 新素材：`vocabulary_items` で `last_appeared_at IS NULL` が大量 → 自然に集中学習（工程2〜4）
+- 新教材：`vocabulary_items` で `last_appeared_at IS NULL` が大量 → 自然に集中学習（工程2〜4）
 - 数日経過：vocab の `mastery_level` が上がり due_score が下がる → shadowing/speaking フェーズへ進む判断
 - 1週間以上経過：due_score が高い項目が散在 → 復習中心
 - shadowing/extensive_listening の実施判断：sessions 履歴を見て「最後に shadowing したのはいつか」「多聴回数」を確認
@@ -353,5 +353,5 @@ WHERE id = :vocabulary_item_id;
 
 #### 多聴セッションも記録
 
-問題なしでも `sessions.phase = 'extensive_listening'` で記録し、累積時間と素材接触履歴を追える。`materials.total_appearances` / `last_appeared_at` も session 終了時に更新する。
+問題なしでも `sessions.phase = 'extensive_listening'` で記録し、累積時間と教材接触履歴を追える。`materials.total_appearances` / `last_appeared_at` も session 終了時に更新する。
 

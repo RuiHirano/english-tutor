@@ -15,8 +15,8 @@ def render() -> None:
     cols = st.columns(4)
     cols[0].metric("総セッション", stats["total_sessions"])
     cols[1].metric("累計学習時間", f"{stats['total_minutes']:.0f} 分")
-    cols[2].metric("学習中の素材", stats["materials_active"])
-    cols[3].metric("完了素材", stats["materials_done"])
+    cols[2].metric("学習中の教材", stats["materials_active"])
+    cols[3].metric("完了教材", stats["materials_done"])
 
     cols = st.columns(3)
     cols[0].metric("カバー語彙数", stats["unique_vocab"])
@@ -30,7 +30,7 @@ def render() -> None:
 
     with left:
         st.subheader("習熟度分布")
-        for scope, label in (("vocabulary_items", "語彙"), ("materials", "素材")):
+        for scope, label in (("vocabulary_items", "語彙"), ("materials", "教材")):
             rows = db.mastery_distribution(scope)
             if not rows:
                 st.caption(f"{label}：データなし")
@@ -73,10 +73,10 @@ def render() -> None:
 
     st.divider()
 
-    st.subheader("素材一覧")
+    st.subheader("教材一覧")
     materials = db.list_materials()
     if not materials:
-        st.info("まだ素材がありません。Kiro で `/start` してみてください。")
+        st.info("まだ教材がありません。Kiro で `/start` してみてください。")
         return
     df = pd.DataFrame(materials)
     df["mastery"] = df["mastery_level"].map(

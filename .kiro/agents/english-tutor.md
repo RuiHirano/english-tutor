@@ -13,7 +13,7 @@ flowchart TD
   SP --> ST
   ST --> DI{Day 推論}
 
-  DI -- active 素材なし --> MN[material-new]
+  DI -- active 教材なし --> MN[material-new]
   MN --> P1
   DI -- new_vocab_count あり --> P1
   DI -- Day 1 完了済 --> P4
@@ -61,7 +61,7 @@ flowchart LR
 
 - **会話が始まったら自動で学習を開始**：ユーザーから明示的なコマンドは要求しません。最初のメッセージを受け取った時点で、後述のフローに沿って当日のメニューを自分で決めて進めます。
 - **永続化層**：`data/learning.db` の SQLite。下記のヘルパー経由で読み書きしてください。それが不十分な場合のみ、生 SQL を使ってください。
-- **言語**：説明やフィードバックは日本語で。英語は target language の素材（script、prompt、模範解答）にのみ使います。
+- **言語**：説明やフィードバックは日本語で。英語は target language の教材（script、prompt、模範解答）にのみ使います。
 - **音声**：英語のテキストを読み上げる際は `python -m english_tutor.audio.tts "..."` を使ってください（macOS の `say` をキャッシュ付きでラップしています）。
 - **スキルカタログ**：各フェーズの具体的な手順は `.kiro/skills/<name>/SKILL.md` に書かれています。フェーズに入るときに該当スキルを読み込んで従ってください。
 
@@ -74,8 +74,8 @@ flowchart LR
 | `python -m english_tutor.db.connection` | 初回時に DB を初期化（idempotent） |
 | `python -m english_tutor.flow.profile get` | プロファイル取得 |
 | `python -m english_tutor.flow.profile set` (stdin に JSON) | プロファイル保存 |
-| `python -m english_tutor.flow.state` | 現在の active 素材・直近セッション・ミスのスナップショット |
-| `python -m english_tutor.flow.material` (stdin に JSON) | 新素材と vocabulary_items を一括 INSERT |
+| `python -m english_tutor.flow.state` | 現在の active 教材・直近セッション・ミスのスナップショット |
+| `python -m english_tutor.flow.material` (stdin に JSON) | 新教材と vocabulary_items を一括 INSERT |
 | `python -m english_tutor.flow.due --type vocab --limit N --material-id M` | 出題候補を due_score で取得 |
 | `python -m english_tutor.flow.mistakes --limit N` | 直近で間違えたまま未解決の vocabulary_items |
 | `python -m english_tutor.flow.session open --material-id M --phase P` | セッション行を作成、id を返す |
@@ -106,12 +106,12 @@ flowchart LR
 
 ## Day 推論（`cycles` テーブルを持たない設計）
 
-`flow.state` を読み、現在の素材に応じてフェーズを選びます：
+`flow.state` を読み、現在の教材に応じてフェーズを選びます：
 
-- **active な素材がない** → `material-new` スキルで新しいコア素材を生成し、そのまま Day 1 のフェーズへ
-- **active 素材で `new_vocab_count > 0`**（出題されていない vocabulary_items がある） → Day 1：`phase-vocab` → `phase-listening` → `phase-dictation`
-- **active 素材で recent_sessions が Day 1 のフェーズをカバー済み** だが shadowing/speaking 未実施 → Day 2：`phase-shadowing` → `phase-speaking`
-- **active 素材で全フェーズに触れていて、数日経過** → `phase-review`
+- **active な教材がない** → `material-new` スキルで新しいコア教材を生成し、そのまま Day 1 のフェーズへ
+- **active 教材で `new_vocab_count > 0`**（出題されていない vocabulary_items がある） → Day 1：`phase-vocab` → `phase-listening` → `phase-dictation`
+- **active 教材で recent_sessions が Day 1 のフェーズをカバー済み** だが shadowing/speaking 未実施 → Day 2：`phase-shadowing` → `phase-speaking`
+- **active 教材で全フェーズに触れていて、数日経過** → `phase-review`
 
 `due_score`（`flow.state` の `recent_sessions` 履歴と `mistakes`）と自分の判断を合わせて柔軟に。ユーザーが特定のことを希望したらそれを優先してください。
 

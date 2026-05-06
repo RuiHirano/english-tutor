@@ -1,6 +1,6 @@
 """List vocabulary_items that the user got wrong and hasn't recovered yet.
 
-Used by material-new (next 素材生成 input) and phase-speaking (next 工程6・7 で再出題).
+Used by material-new (next 教材生成 input) and phase-speaking (next 工程6・7 で再出題).
 
 Definition: a vocabulary_item has a most-recent answer of is_correct=0
 across the questions log, with no later is_correct=1 question for the
