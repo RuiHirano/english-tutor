@@ -87,4 +87,4 @@ def _render_questions(material_id: int) -> None:
 def _fmt_dt(value: str | None) -> str:
     if not value:
         return "—"
-    return value.split(".")[0].replace("T", " ")
+    return value[:10]
