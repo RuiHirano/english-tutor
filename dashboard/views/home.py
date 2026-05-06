@@ -13,7 +13,7 @@ def render() -> None:
     stats = db.overall_stats()
 
     cols = st.columns(4)
-    cols[0].metric("総セッション", stats["total_sessions"])
+    cols[0].metric("総学習回数", stats["total_sessions"])
     cols[1].metric("累計学習時間", f"{stats['total_minutes']:.0f} 分")
     cols[2].metric("学習中の教材", stats["materials_active"])
     cols[3].metric("完了教材", stats["materials_done"])
@@ -55,7 +55,7 @@ def render() -> None:
         st.subheader("直近2週間のアクティビティ")
         rows = db.daily_activity(days=14)
         if not rows:
-            st.caption("セッション履歴なし")
+            st.caption("学習履歴なし")
         else:
             df = pd.DataFrame(rows)
             df["day"] = pd.to_datetime(df["day"])

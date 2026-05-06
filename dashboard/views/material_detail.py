@@ -58,10 +58,10 @@ def _render_vocab(material_id: int) -> None:
 
 
 def _render_sessions(material_id: int) -> None:
-    st.subheader("セッション履歴")
+    st.subheader("学習履歴")
     sessions = db.list_sessions(material_id)
     if not sessions:
-        st.caption("セッション記録なし。")
+        st.caption("学習記録なし。")
         return
     df = pd.DataFrame(sessions)
     df["所要"] = df["duration_seconds"].apply(lambda s: f"{s/60:.1f} 分" if s and s > 0 else "—")
