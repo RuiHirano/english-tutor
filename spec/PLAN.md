@@ -193,29 +193,31 @@ english-tutor/
 
 ## 6. データベース設計
 
-SQLite。スキーマは5テーブルでフラットに保つ。固定的な「Day1-3 サイクル」は持たず、questions の出題統計から動的にスコアリングして出題する。
+SQLite。スキーマは5テーブルでフラットに保つ。固定的な「Day1-3 サイクル」は持たず、`vocabulary_items` の習熟度・出現履歴から動的にスコアリングして、agent がその語彙を題材に新しい問題を都度生成する。
 
 ### テーブル一覧
 
 | テーブル | 役割 |
 |---|---|
 | `user_profile` | 学習者設定（singleton 1行） |
-| `materials` | 教材本体（core / extensive） |
+| `materials` | 教材本体（script + 学習統計） |
+| `vocabulary_items` | 学習対象（語彙・文法・表現）+ 出題統計。**スコアリングの主体** |
 | `sessions` | 学習活動の記録（material × phase × 時刻） |
-| `questions` | 問題 + 出題統計（ask_count, correct_count, last_asked_at） |
-| `answers` | 解答記録（is_correct と feedback） |
+| `questions` | **過去のQ&A記録**（出題内容・解答・正誤）。出題統計は持たず、純粋な履歴ログ |
 
 ### テーブル間の関係
 
 ```
-materials  1 ─── N  sessions    （どの素材を学習したか）
-materials  1 ─── N  questions   （素材から生成された問題）
-sessions   1 ─── N  answers     （セッション内で解答した問題）
-questions  1 ─── N  answers     （問題ごとの解答履歴）
+materials  1 ─── N  vocabulary_items   （素材から抽出された学習項目）
+materials  1 ─── N  sessions           （どの素材を学習したか）
+materials  1 ─── N  questions          （どの素材を題材にしたか）
+sessions   1 ─── N  questions          （セッション内で出題したQ&A）
+vocabulary_items 1 ─── N questions     （どの語彙を題材にしたか、語彙系のみ）
 ```
 
 - **1セッション = 1素材 × 1フェーズ**。複数素材を続けて多聴したら複数セッション
-- `cycles` テーブルは持たない。「今やるべきこと」は agent が questions の `due_score` と sessions の履歴から推論する
+- `cycles` テーブルは持たない。「今やるべきこと」は agent が `vocabulary_items` の due_score と sessions の履歴から推論する
+- 同じ語彙でも毎回新しい問題文・出題形式で出題される（agent が都度生成）。`questions` は再利用されない記録用ログ
 
 ### スキーマ
 
@@ -231,7 +233,26 @@ CREATE TABLE materials (
   id INTEGER PRIMARY KEY,
   title TEXT NOT NULL,
   script TEXT NOT NULL,
+  -- 統計 --
+  total_appearances INTEGER NOT NULL DEFAULT 0,    -- 総学習回数（この素材を扱ったセッション数）
+  last_appeared_at TEXT,                            -- 最後に学習した日時
+  mastery_level INTEGER NOT NULL DEFAULT 0,        -- 習熟度（0:未学習 / 1:認識 / 2:使用 / 3:自動化）
+  started_at TEXT,                                  -- 最初に学習を開始した日時
+  ended_at TEXT,                                -- 学習を完了した日時
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE vocabulary_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    material_id INTEGER REFERENCES materials(id),
+    term TEXT NOT NULL,                               -- 語・句・文法パターン
+    meaning TEXT,
+    type TEXT,                                         -- vocab / grammar / expression
+    -- 統計 --
+    total_appearances INTEGER NOT NULL DEFAULT 0,     -- 総出現回数
+    last_appeared_at TEXT,                             -- 最後に出現した日時
+    mastery_level INTEGER NOT NULL DEFAULT 0,         -- 習熟度（0:未学習 / 1:認識 / 2:使用 / 3:自動化）
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE sessions (
@@ -244,116 +265,111 @@ CREATE TABLE sessions (
 
 CREATE TABLE questions (
   id INTEGER PRIMARY KEY,
-  material_id INTEGER NOT NULL REFERENCES materials(id),
   session_id INTEGER NOT NULL REFERENCES sessions(id),
-  phase TEXT NOT NULL,            -- vocab|listening|dictation|speaking
+  material_id INTEGER NOT NULL REFERENCES materials(id),
+  vocabulary_item_id INTEGER REFERENCES vocabulary_items(id),  -- 語彙系の場合のみ。listening/dictation 等は NULL
+  phase TEXT NOT NULL,                                          -- vocab|listening|dictation|speaking
   question_text TEXT NOT NULL,
   correct_answer TEXT NOT NULL,
-  -- 統計 --
-  total_attempts INTEGER NOT NULL DEFAULT 0,
-  correct_attempts INTEGER NOT NULL DEFAULT 0,
-  consecutive_correct INTEGER NOT NULL DEFAULT 0,
-  last_attempted_at TEXT
-);
-
-CREATE TABLE answers (
-  id INTEGER PRIMARY KEY,
-  material_id INTEGER NOT NULL REFERENCES materials(id),
-  session_id INTEGER NOT NULL REFERENCES sessions(id),
-  question_id INTEGER NOT NULL REFERENCES questions(id),
   user_answer TEXT,
-  is_correct INTEGER NOT NULL,    -- 0/1
+  is_correct INTEGER NOT NULL,                                  -- 0/1
   feedback TEXT,
-  answered_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  asked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_questions_phase_last_asked ON questions(phase, last_asked_at);
+CREATE INDEX idx_vocab_due ON vocabulary_items(type, last_appeared_at);
+CREATE INDEX idx_questions_vocab ON questions(vocabulary_item_id, asked_at);
+CREATE INDEX idx_questions_session ON questions(session_id);
 CREATE INDEX idx_sessions_material ON sessions(material_id, started_at);
-CREATE INDEX idx_answers_question ON answers(question_id);
 ```
 
 ### 設計上の判断
 
-#### 出題は指数バックオフのスコアリング
+#### 出題スコアリングは `vocabulary_items` 基準
 
-固定の `next_review_at` を持たず、出題統計から動的に計算する：
+出題候補の選定は `vocabulary_items` の習熟度と最終出現日時から計算する。`questions` は記録用なのでスコアリングには使わない：
 
 ```
-fail_count    = ask_count - correct_count
-interval_days = 2^(correct_count - fail_count)         -- 連続正解で指数的に伸び、失敗で縮む
-                                                       -- (correct - fail) が負になれば 1日未満で再出題
-days_elapsed  = julianday('now') - julianday(last_asked_at)
-due_score     = days_elapsed - interval_days           -- >0 で出題対象、大きいほど優先
+interval_days = 2^mastery_level                              -- mastery 0:1d, 1:2d, 2:4d, 3:8d
+days_elapsed  = julianday('now') - julianday(last_appeared_at)
+due_score     = days_elapsed - interval_days                 -- >0 で出題対象、大きいほど優先
 ```
 
-新規問題（`last_asked_at IS NULL`）は最大優先で扱う。
+新規語彙（`last_appeared_at IS NULL`）は最大優先で扱う。
 
 出題候補クエリ：
 
 ```sql
-SELECT id, prompt, answer, options_json, ask_count, correct_count,
+SELECT id, term, meaning, type, mastery_level, total_appearances,
   CASE
-    WHEN last_asked_at IS NULL THEN 1e9
-    ELSE (julianday('now') - julianday(last_asked_at))
-         - POWER(2, correct_count - (ask_count - correct_count))
+    WHEN last_appeared_at IS NULL THEN 1e9
+    ELSE (julianday('now') - julianday(last_appeared_at)) - POWER(2, mastery_level)
   END AS due_score
-FROM questions
-WHERE phase = :phase
+FROM vocabulary_items
+WHERE type = :type             -- 'vocab' | 'grammar' | 'expression'
 ORDER BY due_score DESC
 LIMIT :n;
 ```
 
-解答時の更新：
+#### agent が問題を都度生成し、Q&A を `questions` に記録
+
+agent はスコアリングで選ばれた `vocabulary_items` を題材として、毎回新しい問題文と出題形式（4択／穴埋め／日→英／…）を Claude API で生成する。`questions` は再利用されない一回限りの記録：
 
 ```sql
-UPDATE questions
-SET ask_count = ask_count + 1,
-    correct_count = correct_count + :is_correct,
-    last_asked_at = CURRENT_TIMESTAMP
-WHERE id = :id;
+-- 出題後、回答内容を記録
+INSERT INTO questions
+  (session_id, material_id, vocabulary_item_id, phase,
+   question_text, correct_answer, user_answer, is_correct, feedback)
+VALUES (...);
+
+-- 同時に対象 vocabulary_item の統計を更新
+UPDATE vocabulary_items
+SET total_appearances = total_appearances + 1,
+    last_appeared_at  = CURRENT_TIMESTAMP
+WHERE id = :vocabulary_item_id;
 ```
+
+`mastery_level` は単発の正誤で機械的に上下させず、agent が直近の `questions` 履歴を見て昇格／降格を判断（連続正解、出題形式の多様性、誤答の質などを考慮）。
 
 #### Day 1/2/3 のリズムは agent が動的に推論
 
-cycles テーブルを持たず、「今やるべき phase」は agent が以下から判断：
+`cycles` テーブルを持たず、「今やるべき phase」は agent が以下から判断：
 
-- 新素材：vocab/listening/dictation の questions が大量に新規（`last_asked_at IS NULL`）→ 自然に集中学習
-- 数日経過：questions の正解率が上がり due_score が下がる → shadowing/speaking フェーズへ進む判断
-- 1週間以上経過：due_score が高い問題が散在 → 復習中心
+- 新素材：`vocabulary_items` で `last_appeared_at IS NULL` が大量 → 自然に集中学習（工程2〜4）
+- 数日経過：vocab の `mastery_level` が上がり due_score が下がる → shadowing/speaking フェーズへ進む判断
+- 1週間以上経過：due_score が高い項目が散在 → 復習中心
 - shadowing/extensive_listening の実施判断：sessions 履歴を見て「最後に shadowing したのはいつか」「多聴回数」を確認
 
 「Day 1/2/3」は強制ではなく、PLAN §3 の学習リズムに沿った agent の判断指針として残す。
 
-#### 「詰まった表現」は `answers` から導出
+#### 「詰まった表現」は `questions` から導出
 
-#### 「詰まった表現」は `answers` から導出
-
-専用テーブル `struggled_expressions` を作らず、`answers` のクエリで導出する。次素材生成時の入力：
+専用テーブル `struggled_expressions` を作らず、`questions` のクエリで導出する。次素材生成時の入力：
 
 ```sql
--- 過去に失敗があり、その後成功していない表現
-SELECT q.answer AS expression, q.prompt AS japanese, MAX(a.answered_at) AS last_failed_at
-FROM questions q
-JOIN answers a ON a.question_id = q.id
-WHERE q.subtype IN ('ja_to_en','reproduction','retention_use')
-  AND a.is_correct = 0
-GROUP BY q.answer
-HAVING NOT EXISTS (
-  SELECT 1 FROM answers a2
-  JOIN questions q2 ON q2.id = a2.question_id
-  WHERE q2.answer = q.answer
-    AND a2.is_correct = 1
-    AND a2.answered_at > MAX(a.answered_at)
+-- 直近で失敗し、その後正解していない vocabulary_items
+SELECT v.id, v.term, v.meaning, v.type
+FROM vocabulary_items v
+WHERE EXISTS (
+  SELECT 1 FROM questions q
+  WHERE q.vocabulary_item_id = v.id
+    AND q.is_correct = 0
+    AND NOT EXISTS (
+      SELECT 1 FROM questions q2
+      WHERE q2.vocabulary_item_id = v.id
+        AND q2.is_correct = 1
+        AND q2.asked_at > q.asked_at
+    )
 );
 ```
 
-`q.answer` の文字列一致で素材横断の同一表現を識別する。questions 挿入時に正規化（trim、末尾ピリオド除去、lowercase）するルールを skill 側で揃える必要がある。
+`vocabulary_item_id` で素材横断の同一表現を厳密に識別できる。文字列一致のような曖昧さはない。
 
 #### リテンションは「1表現 = 1問題」
 
-工程7「A を使って話して」のように1表現ごとに1問。subtype = `retention_use`、answer に対象表現、prompt にお題（テーマ等）。これにより全工程が `questions` + `answers` の単一モデルで処理可能。
+工程7「A を使って話して」のように1表現ごとに1問。`questions.vocabulary_item_id` で対象表現を指す、`phase = 'speaking'`、`question_text` にお題（テーマ等）、`correct_answer` に使うべき表現を入れる。これにより全工程が `questions` の単一モデルで処理可能。
 
 #### 多聴セッションも記録
 
-問題なしでも `sessions.phase = 'extensive_listening'` で記録し、累積時間と素材接触履歴を追える。
+問題なしでも `sessions.phase = 'extensive_listening'` で記録し、累積時間と素材接触履歴を追える。`materials.total_appearances` / `last_appeared_at` も session 終了時に更新する。
 
