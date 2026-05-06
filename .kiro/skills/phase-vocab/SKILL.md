@@ -24,15 +24,25 @@ description: 工程2 — 語彙・文法・表現のインプット。due_score 
 3. 英語の prompt は `python -m english_tutor.audio.tts "..."` で読み上げる（チャットにも表示する）
 4. ユーザーの回答を待ち、フローコントローラの採点ルールに従って採点する
 5. 日本語で簡潔にフィードバック（1〜2行：正解／部分点／解説 + 模範解答）
-6. 結果を記録：
+6. 結果を記録（ヒアドキュメント形式を厳守。`echo` や `python3 -c` は使わない）：
    ```bash
-   echo '{
+   python3 << 'PYEOF'
+   import subprocess, json, sys
+   data = {
      "session_id": <S>, "material_id": <M>,
      "vocabulary_item_id": <V>, "phase": "vocab",
      "question_text": "...", "correct_answer": "...",
      "user_answer": "...", "is_correct": 0|1,
      "feedback": "..."
-   }' | python -m english_tutor.flow.record
+   }
+   p = subprocess.run(
+       [sys.executable, "-m", "english_tutor.flow.record"],
+       input=json.dumps(data), text=True, capture_output=True)
+   if p.returncode != 0:
+       print(p.stderr)
+   else:
+       print(p.stdout)
+   PYEOF
    ```
 7. 8〜12 項目（または約 10 分）でフェーズを終える
 

@@ -34,12 +34,24 @@ description: 工程6・7 — スピーキング（日→英即答／音読＋暗
 
 ## 記録の形（全サブフェーズ共通）
 
+ヒアドキュメント形式を厳守。`echo` や `python3 -c` は使わない：
+
 ```bash
-echo '{
+python3 << 'PYEOF'
+import subprocess, json, sys
+data = {
   "session_id": <S>, "material_id": <M>,
   "vocabulary_item_id": <V>, "phase": "speaking",
   "question_text": "...", "correct_answer": "...",
   "user_answer": "...", "is_correct": 0|1,
   "feedback": "..."
-}' | python -m english_tutor.flow.record
+}
+p = subprocess.run(
+    [sys.executable, "-m", "english_tutor.flow.record"],
+    input=json.dumps(data), text=True, capture_output=True)
+if p.returncode != 0:
+    print(p.stderr)
+else:
+    print(p.stdout)
+PYEOF
 ```

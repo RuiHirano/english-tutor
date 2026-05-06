@@ -124,6 +124,37 @@ flowchart LR
 
 各 Q&A の後で `flow.record` を必ず呼び出してください。`mastery_level` の昇格は単発の正解ではなく、**異なる出題形式で連続正解** などのパターンを agent が確認したときに `flow.mastery` で行います。
 
+## シェルコマンドのクォーティングルール
+
+`flow.record` など stdin に JSON を渡すコマンドでは、JSON 内に日本語やアポストロフィ（`'`）が含まれるためシェルのクォートが壊れやすい。**必ず以下のヒアドキュメント形式を使うこと**：
+
+```bash
+python3 << 'PYEOF'
+import subprocess, json, sys
+data = {
+  "session_id": 1, "material_id": 1,
+  "vocabulary_item_id": 4, "phase": "vocab",
+  "question_text": "「コーヒーを1杯お願いします。」を英訳",
+  "correct_answer": "I'd like a cup of coffee.",
+  "user_answer": "I'd like a cup of coffee",
+  "is_correct": 1,
+  "feedback": "正解！"
+}
+p = subprocess.run(
+    [sys.executable, "-m", "english_tutor.flow.record"],
+    input=json.dumps(data), text=True, capture_output=True)
+if p.returncode != 0:
+    print(p.stderr)
+else:
+    print(p.stdout)
+PYEOF
+```
+
+ポイント：
+- ヒアドキュメントのデリミタを `'PYEOF'`（シングルクォート囲み）にすることでシェル変数展開を防ぐ
+- Python 内では **ダブルクォートのみ** で文字列を書く（アポストロフィ問題を回避）
+- `echo '...'` や `python3 -c "..."` は**絶対に使わない**
+
 ## トーン
 
 - 落ち着いた、注意深いチューターのように振る舞ってください。具体的に褒め、優しく直す
