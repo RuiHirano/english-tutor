@@ -72,7 +72,7 @@
 - 日本語→英語の即答（パターンプラクティス）
 - 音読＋暗唱（リプロダクション）
 
-詰まった表現・直された表現をデータベースに記録 → 次素材で再出題。
+間違えた表現をデータベースに記録 → 次素材で再出題。
 
 **7. リテンションテスト**
 指定表現を使った自由スピーチ。「today's expressions（〇〇、△△、××）を使って自分の経験を話して」形式。
@@ -102,7 +102,7 @@
 - 多聴：1ヶ月以上経った素材は「軽く聞き直し」枠で再登場
 
 #### 言えなかった表現の回収サイクル
-工程6・7で詰まった表現や直された表現 → DBに記録 → 次素材の工程6・7で再出題。Swainのアウトプット仮説に基づくサイクルの完結。
+工程6・7で間違えた表現 → DBに記録 → 次素材の工程6・7で再出題。Swainのアウトプット仮説に基づくサイクルの完結。
 
 #### 自己モニタリング
 - 正答率の推移グラフ
@@ -341,29 +341,6 @@ WHERE id = :vocabulary_item_id;
 - shadowing/extensive_listening の実施判断：sessions 履歴を見て「最後に shadowing したのはいつか」「多聴回数」を確認
 
 「Day 1/2/3」は強制ではなく、PLAN §3 の学習リズムに沿った agent の判断指針として残す。
-
-#### 「詰まった表現」は `questions` から導出
-
-専用テーブル `struggled_expressions` を作らず、`questions` のクエリで導出する。次素材生成時の入力：
-
-```sql
--- 直近で失敗し、その後正解していない vocabulary_items
-SELECT v.id, v.term, v.meaning, v.type
-FROM vocabulary_items v
-WHERE EXISTS (
-  SELECT 1 FROM questions q
-  WHERE q.vocabulary_item_id = v.id
-    AND q.is_correct = 0
-    AND NOT EXISTS (
-      SELECT 1 FROM questions q2
-      WHERE q2.vocabulary_item_id = v.id
-        AND q2.is_correct = 1
-        AND q2.asked_at > q.asked_at
-    )
-);
-```
-
-`vocabulary_item_id` で素材横断の同一表現を厳密に識別できる。文字列一致のような曖昧さはない。
 
 #### リテンションは「1表現 = 1問題」
 
