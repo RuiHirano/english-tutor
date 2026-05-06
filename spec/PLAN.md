@@ -229,10 +229,8 @@ CREATE TABLE user_profile (
 
 CREATE TABLE materials (
   id INTEGER PRIMARY KEY,
-  kind TEXT NOT NULL CHECK (kind IN ('core','extensive')),
   title TEXT NOT NULL,
-  transcript TEXT NOT NULL,
-  translation_ja TEXT,
+  script TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -247,19 +245,20 @@ CREATE TABLE sessions (
 CREATE TABLE questions (
   id INTEGER PRIMARY KEY,
   material_id INTEGER NOT NULL REFERENCES materials(id),
+  session_id INTEGER NOT NULL REFERENCES sessions(id),
   phase TEXT NOT NULL,            -- vocab|listening|dictation|speaking
-  subtype TEXT NOT NULL,          -- multiple_choice|fill_blank|ja_to_en|true_false|partial_dictation|function_word|full_dictation|reproduction|retention_use
-  prompt TEXT NOT NULL,
-  answer TEXT NOT NULL,
-  options_json TEXT,              -- 4択 distractors（JSON 配列）
-  tags TEXT,                      -- 'article,preposition,weak_form'（カンマ区切り）
-  ask_count INTEGER NOT NULL DEFAULT 0,
-  correct_count INTEGER NOT NULL DEFAULT 0,
-  last_asked_at TEXT
+  question_text TEXT NOT NULL,
+  correct_answer TEXT NOT NULL,
+  -- 統計 --
+  total_attempts INTEGER NOT NULL DEFAULT 0,
+  correct_attempts INTEGER NOT NULL DEFAULT 0,
+  consecutive_correct INTEGER NOT NULL DEFAULT 0,
+  last_attempted_at TEXT
 );
 
 CREATE TABLE answers (
   id INTEGER PRIMARY KEY,
+  material_id INTEGER NOT NULL REFERENCES materials(id),
   session_id INTEGER NOT NULL REFERENCES sessions(id),
   question_id INTEGER NOT NULL REFERENCES questions(id),
   user_answer TEXT,
