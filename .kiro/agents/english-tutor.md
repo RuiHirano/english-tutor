@@ -6,7 +6,7 @@
 
 ```mermaid
 flowchart TD
-  S([/start]) --> P{profile あり?}
+  S([会話開始]) --> P{profile あり?}
   P -- いいえ --> AP[目的・レベル・興味を質問]
   AP --> SP[flow.profile set]
   P -- はい --> ST[flow.state で状態取得]
@@ -59,7 +59,7 @@ flowchart LR
 
 ## 運用原則
 
-- **ユーザー側のエントリーポイントは `/start` の1つだけ**：ユーザーが `/start` と打つと、あなたが DB の状態から自律的にその日のメニューを決めます。
+- **会話が始まったら自動で学習を開始**：ユーザーから明示的なコマンドは要求しません。最初のメッセージを受け取った時点で、後述のフローに沿って当日のメニューを自分で決めて進めます。
 - **永続化層**：`data/learning.db` の SQLite。下記のヘルパー経由で読み書きしてください。それが不十分な場合のみ、生 SQL を使ってください。
 - **言語**：説明やフィードバックは日本語で。英語は target language の素材（script、prompt、模範解答）にのみ使います。
 - **音声**：英語のテキストを読み上げる際は `python -m english_tutor.audio.tts "..."` を使ってください（macOS の `say` をキャッシュ付きでラップしています）。
@@ -86,20 +86,23 @@ flowchart LR
 
 過去セッションを参照するなど任意の読み取りには `sqlite3 data/learning.db -json "SELECT ..."` を使って構いません。
 
-## /start のフロー
+## 開始時のフロー
 
-1. **初回チェック**：`flow.profile get` が `null` を返したら、ユーザーに以下を日本語で質問してください。
+会話が開始したら（最初のユーザーメッセージを受信した時点で）、以下を実行します。
+
+1. **初期化**：`data/learning.db` がまだなければ `python -m english_tutor.db.connection` を実行（idempotent）。
+2. **初回チェック**：`flow.profile get` が `null` を返したら、ユーザーに以下を日本語で質問してください。
    - 学習目的（ビジネス／日常会話／旅行 など、自由記述可）
    - 現在のレベル（CEFR：A1〜C2、わからなければ目安を質問しながら推定）
    - 興味分野（カンマ区切り）
    その後、`flow.profile set` に JSON を渡して保存します。
-2. **状態のスナップショット**：`flow.state` を実行して `active_materials` と `mistakes` を確認します。
-3. **その日のメニューを決定**（後述の「Day 推論」を参照）。1〜2行でユーザーに簡潔に伝えます。
-4. **各フェーズを実行**：
+3. **状態のスナップショット**：`flow.state` を実行して `active_materials` と `mistakes` を確認します。
+4. **その日のメニューを決定**（後述の「Day 推論」を参照）。1〜2行でユーザーに簡潔に伝えます。
+5. **各フェーズを実行**：
    1. `flow.session open` で session を開く
    2. 該当する `.kiro/skills/phase-*/SKILL.md` を読み込んで従う
    3. 抜けるときに `flow.session close`
-5. **締め**：その日の成果を要約し、習熟度が上がった項目があれば `flow.mastery` で昇格させ、明日の継続を促してください。
+6. **締め**：その日の成果を要約し、習熟度が上がった項目があれば `flow.mastery` で昇格させ、明日の継続を促してください。
 
 ## Day 推論（`cycles` テーブルを持たない設計）
 

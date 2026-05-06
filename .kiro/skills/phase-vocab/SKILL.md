@@ -7,7 +7,7 @@ description: 工程2 — 語彙・文法・表現のインプット。due_score 
 
 ## 入力
 
-- `material_id`、`session_id`（/start から渡される）
+- `material_id`、`session_id`（フローコントローラから渡される）
 - 復習プールから過去項目を最大 25% 程度混ぜる：`flow.due` を `--material-id` フィルタなしで呼ぶと過去素材の項目も候補に含まれるので、その自然な分布に任せる
 
 ## 手順
