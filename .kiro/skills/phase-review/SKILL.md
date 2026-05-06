@@ -1,22 +1,22 @@
 ---
 name: phase-review
-description: Day 3 review — re-test mistakes, replay weak listening lines, shadow 2–3 times.
+description: Day 3 復習 — 間違えたものの再テスト、精聴の弱点箇所のみ再聴、シャドーイング 2〜3 回。
 ---
 
-# phase-review
+# phase-review（Day 3 復習）
 
-## Steps
+## 手順
 
-1. **語彙・表現の再テスト** (focus on previously-failed items):
+1. **語彙・表現の再テスト**（過去に間違えたものを中心に）：
    - `python -m english_tutor.flow.mistakes --limit 8`
-   - For each, generate a *different* question form than what they last failed on. If they failed on J→E, try fill-blank now.
-   - Record results. A correct answer here is the recovery signal; bump that vocabulary_item's `mastery_level` if pattern warrants.
-2. **精聴の弱点箇所のみ再聴**:
-   - Find the most recent dictation session for this material via:
+   - 各項目について、**前回失敗した形式とは違う形式** で出題する。例：前回 J→E で失敗していたら今回は穴埋めで
+   - 結果を `flow.record` に記録。ここで正解できたら recovery シグナル。パターンを満たしていれば `flow.mastery vocab` で昇格
+2. **精聴の弱点箇所のみ再聴**：
+   - この素材の直近の dictation セッション ID を取得：
      `sqlite3 data/learning.db -json "SELECT id FROM sessions WHERE material_id=<M> AND phase='dictation' ORDER BY started_at DESC LIMIT 1"`
-   - List its incorrect questions:
+   - そのセッションで間違えた問題を取得：
      `sqlite3 data/learning.db -json "SELECT question_text, correct_answer FROM questions WHERE session_id=<S> AND is_correct=0"`
-   - For each missed sentence: replay audio, give the user one chance, grade.
-3. **シャドーイング 2〜3回** of the core material.
+   - 各文について：音声を再生し、ユーザーに 1 回だけ書き取らせて採点
+3. **シャドーイング 2〜3 回**（コア素材）
 
-Open phase = `review` for steps 1 and 2 (Q&A logged with phase=`review`). Step 3 reuses the shadowing flow but the session phase remains `review` so the dashboard groups it correctly.
+ステップ 1 と 2 では session の `phase = review` で開く（`flow.record` の `phase` も `review`）。ステップ 3 はシャドーイングの流れを使い回すが、session の phase は `review` のままにしてダッシュボードで一括して見える形にする。

@@ -1,22 +1,24 @@
 ---
 name: phase-shadowing
-description: Shadow the core material 3–5 times without script. After the new material, shadow 1–2 older ones for review.
+description: 工程5 — シャドーイング。スクリプトなしでコア素材を 3〜5 回追いかけて発声。続けて過去素材を 1〜2 本。
 ---
 
-# phase-shadowing (工程5)
+# phase-shadowing（工程5）
 
-## Steps
+## 手順
 
-1. Hide the script. Play the audio with `python -m english_tutor.audio.tts --file <path>` (cached for instant replay).
-2. Ask the user to shadow (small delay, mimicking prosody). Repeat 3–5 passes for the core material.
-3. Briefly check in between passes: 「どこが詰まりましたか？」. Note any troublesome lines.
-4. After the new material, pick 1–2 past materials that scored well in their first cycle and shadow them once each.
+1. script をユーザーに見せない状態にする。`python -m english_tutor.audio.tts --file <path>` で再生（キャッシュされているので即時に繰り返せる）
+2. 少し遅れて追いかけるシャドーイングを促す。コア素材で 3〜5 周
+3. パスごとに簡単に確認する：「どこが詰まりましたか？」など。詰まった箇所はメモしておく
+4. 新素材のあと、初回サイクルで反応の良かった過去素材を 1〜2 本選び、それぞれ 1 周ずつシャドーイング
 
-## Recording
+## 記録について
 
-This phase has no Q&A. The session row itself is the record. No `flow.record` calls — but if the user identifies specific lines they fumbled, you may insert them as `phase: "shadowing"` questions with `is_correct: 0` and the line text in `correct_answer` so the dashboard reflects struggle points.
+このフェーズには通常の Q&A はない。session 行自体が記録となる（`flow.record` 呼び出しは基本不要）。
 
-## Tips
+ただしユーザーが具体的に詰まった行を挙げた場合は、その行を `phase: "shadowing"`、`is_correct: 0`、`correct_answer` にその行の英文、として `flow.record` に記録しておくと、ダッシュボードで弱点として見える。
 
-- Mouth-only first pass is fine if the user is shy. Encourage full voice by pass 3.
-- Praise rhythm and reductions, not just word accuracy.
+## ヒント
+
+- 最初の 1 周は口だけ（声を出さない）でも構わない。遠慮せず 3 周目あたりからフルボイスを促す
+- 単語の正確さより、リズム・連結・縮約（reductions）を褒めると伸びやすい

@@ -1,28 +1,31 @@
 ---
 name: phase-vocab
-description: Vocab / grammar / expression intake. Pick the most-due items and generate fresh questions in 4-choice, fill-blank, or J→E form.
+description: 工程2 — 語彙・文法・表現のインプット。due_score 上位の項目から 4択 / 穴埋め / 日→英 を都度生成して出題する。
 ---
 
-# phase-vocab (工程2)
+# phase-vocab（工程2）
 
-## Inputs
+## 入力
 
-- `material_id`, `session_id` (passed by /start)
-- Up to ~25% of items should come from older materials (review). The `flow.due` query handles this automatically — just don't filter by `--material-id`.
+- `material_id`、`session_id`（/start から渡される）
+- 復習プールから過去項目を最大 25% 程度混ぜる：`flow.due` を `--material-id` フィルタなしで呼ぶと過去素材の項目も候補に含まれるので、その自然な分布に任せる
 
-## Steps
+## 手順
 
-1. Pull candidates: `python -m english_tutor.flow.due --type vocab --limit 6` (and again with `--type grammar` and `--type expression`, smaller limits).
-2. For each item, choose a fresh question form:
-   - **4択 (multiple_choice)**: meaning question with 3 plausible distractors.
-   - **穴埋め (fill_blank)**: a sentence using the term with the term blanked out.
-   - **日→英 (ja_to_en)**: a Japanese sentence the user must render using the term.
-   Vary forms so the user doesn't see the same shape twice in a row.
-3. Speak the prompt aloud when it's English, using `python -m english_tutor.audio.tts "..."`. Show it in chat too.
-4. Wait for the user's answer. Grade per the rules in the flow-controller prompt.
-5. Give brief feedback in Japanese (1–2 lines: 正解 / 部分点 / 解説 + 模範解答).
-6. Record:
-   ```
+1. 候補を取得する：
+   - `python -m english_tutor.flow.due --type vocab --limit 6`
+   - `python -m english_tutor.flow.due --type grammar --limit 3`
+   - `python -m english_tutor.flow.due --type expression --limit 3`
+2. 各項目について、出題形式を都度選ぶ：
+   - **4択（multiple_choice）**：意味を問う。誤答の選択肢は紛らわしいが明らかに不適切なものを 3 つ
+   - **穴埋め（fill_blank）**：その term を含む例文の term 部分を空欄にする
+   - **日→英（ja_to_en）**：日本語の文をユーザーがその term を使って英訳する
+   同じ形式が連続しないように形式を変えてください
+3. 英語の prompt は `python -m english_tutor.audio.tts "..."` で読み上げる（チャットにも表示する）
+4. ユーザーの回答を待ち、フローコントローラの採点ルールに従って採点する
+5. 日本語で簡潔にフィードバック（1〜2行：正解／部分点／解説 + 模範解答）
+6. 結果を記録：
+   ```bash
    echo '{
      "session_id": <S>, "material_id": <M>,
      "vocabulary_item_id": <V>, "phase": "vocab",
@@ -31,9 +34,9 @@ description: Vocab / grammar / expression intake. Pick the most-due items and ge
      "feedback": "..."
    }' | python -m english_tutor.flow.record
    ```
-7. After ~8–12 items (or 10 minutes of effort, whichever first), close the phase.
+7. 8〜12 項目（または約 10 分）でフェーズを終える
 
-## Tips
+## ヒント
 
-- Mix new and review. New items first while attention is fresh.
-- If the user fails twice in a row on the same item, switch to recognition (4択) before retesting production (J→E).
+- 集中力のあるうちに新規項目を先に。復習項目は後半へ
+- 同じ項目で 2 回続けて間違えたら、次は産出（日→英）から認識（4択）に下げて出し直す

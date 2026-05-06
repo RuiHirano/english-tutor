@@ -1,7 +1,7 @@
 {
   "name": "english-tutor",
   "description": "English Tutor",
-  "prompt": "file://./english-tutor-prompt.md",
+  "prompt": "file://./english-tutor.md",
   "tools": ["*"],
   "allowedTools": [
     "read",

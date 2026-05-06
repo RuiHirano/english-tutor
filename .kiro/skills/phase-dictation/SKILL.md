@@ -1,24 +1,24 @@
 ---
 name: phase-dictation
-description: Detail-listening dictation drills — partial, function-word, and full transcription.
+description: 工程4 — 精聴・ディクテーション。部分／機能語／全文ディクテーションで細部を聞き取らせる。
 ---
 
-# phase-dictation (工程4)
+# phase-dictation（工程4）
 
-## Steps
+## 手順
 
-1. Choose 4–6 sentences from the core material's `script`. Mix:
-   - **partial_dictation**: blank 1–2 content words in the sentence, ask the user to fill them in.
-   - **function_word**: blank only function words (a/the/of/to/in/on/and/etc.).
-   - **full_dictation**: ask the user to transcribe a sentence verbatim.
-2. For each sentence:
-   1. Speak the sentence with `python -m english_tutor.audio.tts "..."`. Repeat once on request.
-   2. Show the prompt with blanks (or empty for full dictation).
-   3. Grade per dictation rules: ignore case, leading/trailing whitespace, trailing punctuation; otherwise exact.
-3. Feedback in Japanese: which words were missed, why (弱形だったか、語尾が落ちたか、知らない語だったか).
-4. Record each Q&A via `flow.record` with `phase: "dictation"`. If the missed word maps to a `vocabulary_items` row, set `vocabulary_item_id`.
+1. コア素材の `script` から 4〜6 文を選ぶ。次の形式を混ぜる：
+   - **部分ディクテーション（partial_dictation）**：内容語を 1〜2 個ブランクにしてユーザーに埋めさせる
+   - **機能語ディクテーション（function_word）**：機能語（a/the/of/to/in/on/and など）だけブランクにする
+   - **全文ディクテーション（full_dictation）**：文を丸ごと書き取らせる
+2. 各文について：
+   1. `python -m english_tutor.audio.tts "..."` で読み上げる。リクエストがあれば 1 回繰り返す
+   2. ブランク付きの prompt を表示する（全文ディクの場合は空欄）
+   3. ディクテーションの採点ルールで判定（大文字小文字・前後空白・末尾句読点を無視、それ以外は完全一致）
+3. 日本語でフィードバック：どの語が抜けたか、なぜか（弱形だったか／語尾が消えたか／知らない語だったか）
+4. 各 Q&A を `flow.record` で記録（`phase: "dictation"`）。抜けた語が `vocabulary_items` の term にマッチするなら `vocabulary_item_id` を設定する
 
-## Tips
+## ヒント
 
-- Function-word dictation surfaces weak forms (e.g., "of" → /əv/). Call those out by name.
-- After three sentences from the new material, sneak in 1–2 from older materials (review).
+- 機能語ディクテーションは弱形（例: "of" → /əv/）に気づかせる効果が大きい。具体名で指摘してあげる
+- 新素材から 3 文出したら、過去素材から 1〜2 文混ぜる（復習プール）

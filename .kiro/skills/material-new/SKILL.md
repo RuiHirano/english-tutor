@@ -1,32 +1,32 @@
 ---
 name: material-new
-description: Generate a new core material plus a few extensive listening pieces, weave in unresolved mistakes, and persist to DB.
+description: 新しいコア素材と多聴用素材を生成する。未解決のミス表現を織り込み、DB に保存する。
 ---
 
 # material-new
 
-Triggered when the flow-controller decides "no active material to work on" (or the user asks for a new topic).
+「active な素材がない」とフローコントローラが判断したとき、またはユーザーが新しいトピックを希望したときに使う。
 
-## Inputs to consult
+## 参照する入力
 
 - `python -m english_tutor.flow.profile get` → goal / level / interests
-- `python -m english_tutor.flow.mistakes --limit 15` → vocabulary_items to weave in
+- `python -m english_tutor.flow.mistakes --limit 15` → 織り込むべき vocabulary_items
 
-## Steps
+## 手順
 
-1. **Generate a core material**. Aim for ~150–250 words (level-appropriate; A1≈80, B1≈150, C1≈250). Theme should reflect the user's interests and goal. **Naturally embed every mistake `term` from `flow.mistakes` into the script.** Provide:
-   - `title`: short English title
-   - `script`: the full text (continuous prose or a short dialogue)
-   - `items`: 8–15 entries, each:
-     - `term` (English word/phrase/grammar pattern as it appears)
-     - `meaning` (Japanese gloss)
-     - `type` (`vocab` / `grammar` / `expression`)
-2. Save it: pipe the JSON to `python -m english_tutor.flow.material`.
-3. **Generate 2–3 extensive listening pieces** on related but lighter topics. Same JSON shape, but `items` can be empty (or just 2–3 key vocab). Save each via `flow.material`.
-4. Briefly tell the user (in Japanese) the new core material's title and what's coming next.
+1. **コア素材を生成**する。150〜250語程度（レベルに応じて：A1≈80、B1≈150、C1≈250）。テーマはユーザーの interests と goal を反映。**`flow.mistakes` で取得した term をすべて自然に script に埋め込む**こと。次の JSON を作成する：
+   - `title`：短い英語タイトル
+   - `script`：本文全体（連続したプロースか短い対話）
+   - `items`：8〜15 個のエントリ。各エントリは：
+     - `term`（script に出てくるそのままの形：単語／句／文法パターン）
+     - `meaning`（日本語訳・説明）
+     - `type`（`vocab` / `grammar` / `expression`）
+2. JSON を `python -m english_tutor.flow.material` に stdin で渡して保存する。
+3. **多聴用の素材を 2〜3 本生成**する。同じ JSON 形式だが、`items` は空でも良い（または重要語彙を 2〜3 個）。それぞれ `flow.material` で保存する。
+4. 日本語で、新しいコア素材のタイトルとこれから何をするかを簡潔にユーザーに伝える。
 
-## Quality checks
+## 品質チェック
 
-- Script must read naturally. Don't shoehorn vocabulary in unnaturally.
-- Every `items[].term` must literally appear in `script` (case-insensitive).
-- Avoid duplicates against existing materials — quickly scan recent titles via `sqlite3 data/learning.db -json "SELECT title FROM materials ORDER BY id DESC LIMIT 10"`.
+- script は自然な英語であること。語彙を不自然に詰め込まない
+- すべての `items[].term` が script 内に literal で（大文字小文字を無視して）登場すること
+- 既存素材との重複を避ける：`sqlite3 data/learning.db -json "SELECT title FROM materials ORDER BY id DESC LIMIT 10"` で直近のタイトルを確認する
