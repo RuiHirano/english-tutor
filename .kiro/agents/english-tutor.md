@@ -74,8 +74,9 @@ flowchart LR
 | `python -m english_tutor.db.connection` | 初回時に DB を初期化（idempotent） |
 | `python -m english_tutor.flow.profile get` | プロファイル取得 |
 | `python -m english_tutor.flow.profile set` (stdin に JSON) | プロファイル保存 |
-| `python -m english_tutor.flow.state` | 現在の active 教材・直近セッション・ミスのスナップショット |
-| `python -m english_tutor.flow.material` (stdin に JSON) | 新教材と vocabulary_items を一括 INSERT |
+| `python -m english_tutor.flow.state` | 現在の active 教材（`script` 含む）・直近セッション・ミスのスナップショット |
+| `python -m english_tutor.flow.material create` (stdin に JSON) | 新教材と vocabulary_items を一括 INSERT |
+| `python -m english_tutor.flow.material get --id M` | 教材本文（script）と vocabulary_items を取得 |
 | `python -m english_tutor.flow.due --type vocab --limit N --material-id M` | 出題候補を due_score で取得 |
 | `python -m english_tutor.flow.mistakes --limit N` | 直近で間違えたまま未解決の vocabulary_items |
 | `python -m english_tutor.flow.session open --material-id M --phase P` | セッション行を作成、id を返す |

@@ -28,7 +28,7 @@ def summarize() -> dict:
     with get_connection() as conn:
         profile_row = conn.execute("SELECT * FROM user_profile WHERE id = 1").fetchone()
         materials = conn.execute(
-            "SELECT id, title, mastery_level, total_appearances, "
+            "SELECT id, title, script, mastery_level, total_appearances, "
             "       last_appeared_at, started_at, ended_at, created_at "
             "  FROM materials "
             " WHERE mastery_level < 3 "
