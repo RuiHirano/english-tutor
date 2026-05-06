@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS materials (
   script TEXT NOT NULL,
   total_appearances INTEGER NOT NULL DEFAULT 0,
   last_appeared_at TEXT,
-  mastery_level INTEGER NOT NULL DEFAULT 0,
+  mastery_level INTEGER NOT NULL DEFAULT 1,
   started_at TEXT,
   ended_at TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS vocabulary_items (
   type TEXT,
   total_appearances INTEGER NOT NULL DEFAULT 0,
   last_appeared_at TEXT,
-  mastery_level INTEGER NOT NULL DEFAULT 0,
+  mastery_level INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
