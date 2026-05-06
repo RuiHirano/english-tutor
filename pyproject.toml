@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "english-tutor"
+version = "0.1.0"
+description = "SLA-informed English learning system for Kiro CLI"
+requires-python = ">=3.11"
+dependencies = [
+  "streamlit>=1.36",
+  "pyyaml>=6.0",
+  "pandas>=2.0",
+  "altair>=5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+english_tutor = ["db/schema.sql"]

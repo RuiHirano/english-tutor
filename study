@@ -1,8 +1,16 @@
 #!/bin/bash
-# English Mentor - Study Planner launcher
-# Starts Streamlit dashboard in background, then launches kiro with study-planner agent
+# English Tutor launcher
+# Starts the Streamlit dashboard in the background, then launches Kiro
+# with the english-tutor agent. PYTHONPATH=src is exported so that
+# `python -m english_tutor.*` works from inside skills without
+# requiring `pip install -e .`.
 
 cd "$(dirname "$0")"
+
+export PYTHONPATH="$(pwd)/src${PYTHONPATH:+:$PYTHONPATH}"
+
+# Initialize the SQLite DB on first run (idempotent).
+python -m english_tutor.db.connection >/dev/null 2>&1 || true
 
 # Start dashboard if not already running
 if pgrep -f "streamlit run dashboard/app.py" >/dev/null 2>&1; then
@@ -14,5 +22,5 @@ else
   echo "✓ Dashboard started (http://localhost:8501)"
 fi
 
-# Launch kiro with study-planner agent
-exec kiro-cli chat --agent study-planner
+# Launch kiro with the english-tutor agent
+exec kiro-cli chat --agent english-tutor

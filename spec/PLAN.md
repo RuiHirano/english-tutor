@@ -140,56 +140,61 @@
 english-tutor/
 ├── README.md
 ├── pyproject.toml
-├── CLAUDE.md                          # flow-controller の常駐指示（Day判定・工程順序・全体ルール）
-│
-├── .claude/
-│   └── skills/
-│       ├── start/SKILL.md             # /start：エントリポイント
-│       ├── phase-vocab/SKILL.md       # 工程2：語彙・文法・表現インプット
-│       ├── phase-listening/SKILL.md   # 工程3：多聴
-│       ├── phase-dictation/SKILL.md   # 工程4：精聴・ディクテーション
-│       ├── phase-shadowing/SKILL.md   # 工程5：シャドーイング
-│       ├── phase-speaking/SKILL.md    # 工程6・7：スピーキング・リテンション
-│       ├── phase-review/SKILL.md      # Day 3 復習工程
-│       ├── material-new/SKILL.md      # 工程1：新素材生成の手順
-│       └── question-generate/SKILL.md # 素材から問題化する手順
+├── study                                  # 起動シェルスクリプト（PYTHONPATH 設定 + Streamlit + Kiro 起動）
 │
 ├── .kiro/
-│   ├── agents/english-tutor.{json,md} # Kiro エージェント定義
-│   └── skills/                        # .claude/skills と同内容
+│   ├── agents/
+│   │   ├── english-tutor.json             # Kiro エージェント定義
+│   │   ├── english-tutor.md               # （未使用、空のスタブ）
+│   │   └── english-tutor-prompt.md        # flow-controller の常駐指示
+│   └── skills/
+│       ├── start/SKILL.md                 # /start：エントリポイント
+│       ├── material-new/SKILL.md          # 工程1：新素材生成の手順
+│       ├── phase-vocab/SKILL.md           # 工程2：語彙・文法・表現インプット
+│       ├── phase-listening/SKILL.md       # 工程3：多聴
+│       ├── phase-dictation/SKILL.md       # 工程4：精聴・ディクテーション
+│       ├── phase-shadowing/SKILL.md       # 工程5：シャドーイング
+│       ├── phase-speaking/SKILL.md        # 工程6・7：スピーキング・リテンション
+│       └── phase-review/SKILL.md          # Day 3 復習工程
 │
 ├── src/english_tutor/
 │   ├── db/
-│   │   ├── schema.sql                 # 初期スキーマ
-│   │   └── connection.py
-│   ├── flow/day_resolver.py           # 進行中サイクル → 当日メニュー構築
-│   ├── review/spaced_rep.py           # 1d→3d→1w→2w→1m の間隔反復
-│   └── audio/tts.py                   # macOS say ラッパー
+│   │   ├── schema.sql                     # 初期スキーマ
+│   │   └── connection.py                  # 接続 + init
+│   ├── flow/
+│   │   ├── profile.py                     # user_profile の読み書き
+│   │   ├── material.py                    # 新素材 + vocabulary_items を一括 INSERT
+│   │   ├── state.py                       # /start 時の状態スナップショット
+│   │   ├── due.py                         # 出題候補スコアリング
+│   │   ├── mistakes.py                    # 未解決ミスの抽出
+│   │   ├── session.py                     # session 行の open/close
+│   │   ├── record.py                      # questions 行の挿入 + 統計更新
+│   │   └── mastery.py                     # mastery_level の昇格
+│   └── audio/tts.py                       # macOS say ラッパー（caching）
 │
 ├── dashboard/
-│   ├── app.py                         # Streamlit エントリ
-│   └── pages/                         # progress, weakness, review_pool, materials
+│   ├── app.py                             # st.navigation エントリ（Home + Materials）
+│   ├── db.py                              # 読み取り専用クエリ
+│   └── views/
+│       ├── home.py                        # 累積統計・習熟度分布・直近活動
+│       └── material_detail.py             # 素材詳細（vocab・session・Q&A）
 │
-├── config/
-│   └── user.yaml                      # 学習者プロフィール（goal, level, interests）
+├── data/                                  # gitignore（.gitkeep のみ追跡）
+│   ├── learning.db                        # SQLite 本体
+│   └── audio/                             # say で生成した音声キャッシュ
 │
-├── data/                              # gitignore（.gitkeep のみ追跡）
-│   ├── learning.db                    # SQLite 本体
-│   └── audio/                         # say で生成した音声キャッシュ
-│
-├── tests/
-├── spec/PLAN.md
-└── study                              # 起動シェルスクリプト（Streamlit + Kiro 起動）
+└── spec/PLAN.md
 ```
 
 ### 設計方針
 
-- **メインスレッド = flow-controller**：`CLAUDE.md` に当日の進行ロジックを書き、`/start` で発火する
+- **メインスレッド = flow-controller**：`.kiro/agents/english-tutor-prompt.md` に当日の進行ロジックを書き、`/start` で発火する
 - **skill = 工程ごとの手順書**：ユーザーとの一問一答は skill 内で完結（subagent を使わない A 案）
 - **DB アクセスは CLI 抽象を作らない**：
-  - 単純な CRUD（解答記録・出題候補取得）→ skill から `sqlite3 data/learning.db -json "..."` を直接叩く
-  - 複雑なロジック（Day判定・間隔反復スコア更新）→ `python -m english_tutor.flow.day` のように Python モジュールを直接実行
-- **`.claude/skills` を正、`.kiro/skills` をシンボリックリンク**で同期
+  - 単純な CRUD（解答記録・出題候補取得）→ skill から `python -m english_tutor.flow.<module>` または `sqlite3 data/learning.db -json "..."` を直接叩く
+  - すべて JSON 入出力で skill ↔ Python の境界を薄く保つ
+- **Kiro 専用構成**：`.claude/` は持たない。skill / agent はすべて `.kiro/` 配下
+- **`PYTHONPATH=src`** は `study` スクリプトが export するので、kiro 経由のサブプロセスにも継承される
 
 ## 6. データベース設計
 
