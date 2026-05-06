@@ -25,20 +25,18 @@ export PYTHONPATH="$(pwd)/src${PYTHONPATH:+:$PYTHONPATH}"
 # Initialize the SQLite DB on first run (idempotent).
 python -m english_tutor.db.connection >/dev/null 2>&1 || true
 
-# Start dashboard if not already running
-if pgrep -f "streamlit run dashboard/app.py" >/dev/null 2>&1; then
-  echo "✓ Dashboard already running (http://localhost:8501)"
-else
-  streamlit run dashboard/app.py --server.headless true &>/dev/null &
-  DASH_PID=$!
-  trap "kill $DASH_PID 2>/dev/null" EXIT
-  echo "✓ Dashboard started (http://localhost:8501)"
-fi
+# Always restart dashboard: kill any existing instance, then start fresh
+DASH_PORT=8600
+pkill -f "streamlit run dashboard/app.py" >/dev/null 2>&1 && sleep 1
+streamlit run dashboard/app.py --server.headless true --server.port ${DASH_PORT} &>/dev/null &
+DASH_PID=$!
+trap "kill $DASH_PID 2>/dev/null" EXIT
+echo "✓ Dashboard started (http://localhost:${DASH_PORT})"
 
 # Launch the chosen runner with the english-tutor agent
 case "$RUNNER" in
   claude)
-    exec claude "/english-tutor"
+    exec claude
     ;;
   kiro)
     exec kiro-cli chat --agent english-tutor "学習を始めてください。"
