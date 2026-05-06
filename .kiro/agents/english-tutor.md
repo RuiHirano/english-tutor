@@ -108,7 +108,7 @@ flowchart LR
 
 `flow.state` を読み、現在の素材に応じてフェーズを選びます：
 
-- **active な素材がない** → `material-new` スキルで新しいコア素材＋多聴用素材をいくつか生成し、そのまま Day 1 のフェーズへ
+- **active な素材がない** → `material-new` スキルで新しいコア素材を生成し、そのまま Day 1 のフェーズへ
 - **active 素材で `new_vocab_count > 0`**（出題されていない vocabulary_items がある） → Day 1：`phase-vocab` → `phase-listening` → `phase-dictation`
 - **active 素材で recent_sessions が Day 1 のフェーズをカバー済み** だが shadowing/speaking 未実施 → Day 2：`phase-shadowing` → `phase-speaking`
 - **active 素材で全フェーズに触れていて、数日経過** → `phase-review`
