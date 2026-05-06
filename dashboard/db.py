@@ -70,6 +70,20 @@ def list_questions(material_id: int, only_wrong: bool = False) -> list[dict]:
 
 
 @st.cache_data(ttl=10)
+def list_learned_vocab() -> list[dict]:
+    """All vocabulary_items that have been asked at least once, with material title."""
+    return _rows(
+        "SELECT v.id, v.term, v.meaning, v.type, v.mastery_level, "
+        "       v.total_appearances, v.last_appeared_at, "
+        "       v.material_id, m.title AS material_title "
+        "  FROM vocabulary_items v "
+        "  LEFT JOIN materials m ON m.id = v.material_id "
+        " WHERE v.total_appearances > 0 "
+        " ORDER BY v.last_appeared_at DESC, v.id DESC"
+    )
+
+
+@st.cache_data(ttl=10)
 def overall_stats() -> dict:
     with get_connection() as conn:
         total_sessions = conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
