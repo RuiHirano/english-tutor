@@ -36,6 +36,7 @@ function ensureColumn(
 
 function migrate(database: DatabaseSync): void {
   ensureColumn(database, 'materials', 'script_ja', 'script_ja TEXT');
+  ensureColumn(database, 'vocabulary_items', 'examples', 'examples TEXT');
 }
 
 function backfillMastery(database: DatabaseSync): void {

@@ -57,6 +57,11 @@ const MaterialDraftSchema = z.object({
         term: z.string(),
         meaning: z.string(),
         type: z.enum(['vocab', 'grammar', 'expression']),
+        examples: z
+          .array(z.object({ en: z.string(), ja: z.string() }))
+          .min(1)
+          .max(3)
+          .optional(),
       }),
     )
     .min(1),

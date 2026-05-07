@@ -48,10 +48,15 @@ export function VocabQuestion({ question, index, total, onAnswer }: Props) {
           {last.modelAnswer && last.modelAnswer !== q.correct && (
             <p className="text-sm">参考: {last.modelAnswer}</p>
           )}
-          {q.example && (
-            <div className="rounded-md border bg-amber-50 p-3">
-              <p className="text-xs font-medium text-amber-700">例題（教材より）</p>
-              <p className="mt-1 text-sm">{q.example}</p>
+          {q.examples && q.examples.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">例題</p>
+              {q.examples.map((ex, i) => (
+                <div key={i} className="rounded-md border bg-amber-50 p-3">
+                  <p className="text-sm">{ex.en}</p>
+                  {ex.ja && <p className="mt-1 text-xs text-amber-700">{ex.ja}</p>}
+                </div>
+              ))}
             </div>
           )}
           {last.feedback && (

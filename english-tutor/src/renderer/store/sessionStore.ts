@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import type { Evaluation, PhaseName, QuestionKind, VocabDue } from '@shared/types';
+import type {
+  Evaluation,
+  ExampleSentence,
+  PhaseName,
+  QuestionKind,
+  VocabDue,
+} from '@shared/types';
 import { call } from '@/lib/api';
 
 export interface PhaseQuestion {
@@ -9,7 +15,7 @@ export interface PhaseQuestion {
   prompt: string;
   correct: string;
   options?: string[];
-  example?: string;
+  examples?: ExampleSentence[];
   meta?: Record<string, unknown>;
 }
 

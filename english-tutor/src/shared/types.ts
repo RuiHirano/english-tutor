@@ -46,12 +46,18 @@ export interface Material {
   created_at: string;
 }
 
+export interface ExampleSentence {
+  en: string;
+  ja: string;
+}
+
 export interface VocabItem {
   id: number;
   material_id: number | null;
   term: string;
   meaning: string | null;
   type: VocabType | null;
+  examples: ExampleSentence[];
   total_appearances: number;
   last_appeared_at: string | null;
   mastery_level: MasteryLevel;
@@ -118,6 +124,7 @@ export interface VocabItemDraft {
   term: string;
   meaning: string;
   type: VocabType;
+  examples?: ExampleSentence[];
 }
 
 export interface MaterialDraft {

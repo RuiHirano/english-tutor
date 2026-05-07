@@ -1,5 +1,6 @@
 import type { VocabDue, VocabType } from '@shared/types';
 import { getDb } from './connection';
+import { parseExamples } from './material';
 
 const NEW_ITEM_SCORE = 1e9;
 
@@ -9,6 +10,7 @@ interface RawRow {
   term: string;
   meaning: string | null;
   type: VocabType | null;
+  examples: string | null;
   mastery_level: 0 | 1 | 2 | 3;
   total_appearances: number;
   last_appeared_at: string | null;
@@ -35,7 +37,7 @@ export function pickDue(opts: {
 
   const rows = getDb()
     .prepare(
-      `SELECT id, material_id, term, meaning, type,
+      `SELECT id, material_id, term, meaning, type, examples,
               mastery_level, total_appearances, last_appeared_at, created_at,
               CASE
                 WHEN last_appeared_at IS NULL THEN NULL
@@ -57,6 +59,7 @@ export function pickDue(opts: {
       term: r.term,
       meaning: r.meaning,
       type: r.type,
+      examples: parseExamples(r.examples),
       mastery_level: r.mastery_level,
       total_appearances: r.total_appearances,
       last_appeared_at: r.last_appeared_at,

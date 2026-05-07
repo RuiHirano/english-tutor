@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS vocabulary_items (
   term TEXT NOT NULL,
   meaning TEXT,
   type TEXT,
+  examples TEXT,
   total_appearances INTEGER NOT NULL DEFAULT 0,
   last_appeared_at TEXT,
   mastery_level INTEGER NOT NULL DEFAULT 1,

@@ -10,7 +10,7 @@ export async function buildVocabPhaseQueue(materialId: number): Promise<PhaseQue
     call('db:vocab.due', { materialId, limit: VOCAB_QUEUE_SIZE }),
     call('db:material.get', { id: materialId }),
   ]);
-  return buildVocabQueue(items, material?.script);
+  return buildVocabQueue(items, material?.script, material?.script_ja ?? undefined);
 }
 
 export async function buildListeningPhaseQueue(

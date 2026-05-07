@@ -1,4 +1,4 @@
-import type { QuestionKind, VocabDue } from '@shared/types';
+import type { ExampleSentence, QuestionKind, VocabDue } from '@shared/types';
 import type { PhaseQuestion } from '@/store/sessionStore';
 
 const KINDS: QuestionKind[] = ['vocab.mc', 'vocab.fill', 'vocab.jp2en'];
@@ -20,24 +20,53 @@ function shuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
-function findExampleSentence(script: string | undefined, term: string): string | undefined {
-  if (!script || !term) return undefined;
-  const sentences = script
+function splitSentences(text: string | undefined): string[] {
+  if (!text) return [];
+  return text
     .replace(/\n+/g, ' ')
-    .split(/(?<=[.!?])\s+/)
+    .split(/(?<=[.!?。！？])\s+/)
     .map((s) => s.trim())
     .filter(Boolean);
-  // 文法パターンは "+" や "~" を含むことがあるので、単語だけ抽出して照合する。
-  const cleaned = term.replace(/[+~()]/g, '').trim();
-  const probe = cleaned.length > 2 ? cleaned : term;
-  const lc = probe.toLowerCase();
-  return sentences.find((s) => s.toLowerCase().includes(lc));
 }
 
-export function buildVocabQueue(items: VocabDue[], script?: string): PhaseQuestion[] {
+function findMaterialExample(
+  script: string | undefined,
+  scriptJa: string | undefined,
+  term: string,
+): ExampleSentence | null {
+  const en = splitSentences(script);
+  const ja = splitSentences(scriptJa);
+  if (en.length === 0 || !term) return null;
+  const cleaned = term.replace(/[+~()]/g, '').trim();
+  const probe = (cleaned.length > 2 ? cleaned : term).toLowerCase();
+  const idx = en.findIndex((s) => s.toLowerCase().includes(probe));
+  if (idx < 0) return null;
+  return {
+    en: en[idx],
+    // 英語と日本語の文数が一致する前提（プロンプトで指示済み）。ずれたら ja は空。
+    ja: ja.length === en.length ? ja[idx] : '',
+  };
+}
+
+function buildExamples(
+  item: VocabDue,
+  script: string | undefined,
+  scriptJa: string | undefined,
+): ExampleSentence[] {
+  const out: ExampleSentence[] = [];
+  const fromMaterial = findMaterialExample(script, scriptJa, item.term);
+  if (fromMaterial) out.push(fromMaterial);
+  for (const e of item.examples ?? []) {
+    out.push(e);
+    if (out.length >= 3) break;
+  }
+  return out;
+}
+
+export function buildVocabQueue(items: VocabDue[], script?: string, scriptJa?: string): PhaseQuestion[] {
   const usable = items.filter((i) => i.term && i.meaning);
   return usable.map((item) => {
-    const example = findExampleSentence(script, item.term);
+    const examples = buildExamples(item, script, scriptJa);
     const kind = pickKindFor(item);
     if (kind === 'vocab.mc') {
       const distractors = shuffle(usable.filter((x) => x.id !== item.id))
@@ -50,7 +79,7 @@ export function buildVocabQueue(items: VocabDue[], script?: string): PhaseQuesti
         prompt: `「${item.term}」の意味として最も近いものは？`,
         correct: item.meaning ?? '',
         options,
-        example,
+        examples,
       };
     }
     if (kind === 'vocab.fill') {
@@ -59,7 +88,7 @@ export function buildVocabQueue(items: VocabDue[], script?: string): PhaseQuesti
         vocab: item,
         prompt: `次の意味になる英語を入力してください: 「${item.meaning}」`,
         correct: item.term,
-        example,
+        examples,
       };
     }
     return {
@@ -67,7 +96,7 @@ export function buildVocabQueue(items: VocabDue[], script?: string): PhaseQuesti
       vocab: item,
       prompt: item.meaning ?? '',
       correct: item.term,
-      example,
+      examples,
     };
   });
 }

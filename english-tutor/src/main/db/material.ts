@@ -1,6 +1,34 @@
-import type { Material, SessionRecord, VocabItem, VocabItemDraft } from '@shared/types';
+import type {
+  ExampleSentence,
+  Material,
+  SessionRecord,
+  VocabItem,
+  VocabItemDraft,
+} from '@shared/types';
 import type { CreateMaterialResult, MaterialWithVocab } from '@shared/ipc';
 import { getDb } from './connection';
+
+interface RawVocabRow extends Omit<VocabItem, 'examples'> {
+  examples: string | null;
+}
+
+export function parseExamples(raw: string | null | undefined): ExampleSentence[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (e): e is ExampleSentence =>
+        typeof e === 'object' && e !== null && typeof e.en === 'string' && typeof e.ja === 'string',
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function hydrateVocab(row: RawVocabRow): VocabItem {
+  return { ...row, examples: parseExamples(row.examples) };
+}
 
 export function listMaterials(activeOnly = false): Material[] {
   const sql = activeOnly
@@ -20,9 +48,10 @@ export function getMaterial(id: number): MaterialWithVocab | null {
   const row = getDb().prepare('SELECT * FROM materials WHERE id = ?').get(id) as
     | unknown as Material | undefined;
   if (!row) return null;
-  const items = getDb()
+  const rawItems = getDb()
     .prepare('SELECT * FROM vocabulary_items WHERE material_id = ? ORDER BY id')
-    .all(id) as unknown as VocabItem[];
+    .all(id) as unknown as RawVocabRow[];
+  const items: VocabItem[] = rawItems.map(hydrateVocab);
   const sessions = getDb()
     .prepare('SELECT * FROM sessions WHERE material_id = ? ORDER BY started_at DESC')
     .all(id) as unknown as SessionRecord[];
@@ -47,10 +76,19 @@ export function createMaterial(payload: {
     materialId = Number(result.lastInsertRowid);
 
     const insItem = db.prepare(
-      'INSERT INTO vocabulary_items (material_id, term, meaning, type) VALUES (?, ?, ?, ?)',
+      'INSERT INTO vocabulary_items (material_id, term, meaning, type, examples) VALUES (?, ?, ?, ?, ?)',
     );
     for (const item of payload.items) {
-      const r = insItem.run(materialId, item.term, item.meaning ?? null, item.type ?? null);
+      const examplesJson = item.examples && item.examples.length > 0
+        ? JSON.stringify(item.examples)
+        : null;
+      const r = insItem.run(
+        materialId,
+        item.term,
+        item.meaning ?? null,
+        item.type ?? null,
+        examplesJson,
+      );
       itemIds.push(Number(r.lastInsertRowid));
     }
     db.exec('COMMIT');
