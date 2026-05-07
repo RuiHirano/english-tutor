@@ -6,8 +6,11 @@ import type { CefrLevel, VocabMistake } from '@shared/types';
 const VOCAB_QUEUE_SIZE = 8;
 
 export async function buildVocabPhaseQueue(materialId: number): Promise<PhaseQuestion[]> {
-  const items = await call('db:vocab.due', { materialId, limit: VOCAB_QUEUE_SIZE });
-  return buildVocabQueue(items);
+  const [items, material] = await Promise.all([
+    call('db:vocab.due', { materialId, limit: VOCAB_QUEUE_SIZE }),
+    call('db:material.get', { id: materialId }),
+  ]);
+  return buildVocabQueue(items, material?.script);
 }
 
 export async function buildListeningPhaseQueue(

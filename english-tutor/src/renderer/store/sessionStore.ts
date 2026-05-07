@@ -9,6 +9,7 @@ export interface PhaseQuestion {
   prompt: string;
   correct: string;
   options?: string[];
+  example?: string;
   meta?: Record<string, unknown>;
 }
 

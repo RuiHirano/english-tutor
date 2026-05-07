@@ -29,6 +29,7 @@ export function VocabQuestion({ question, index, total, onAnswer }: Props) {
   }
 
   if (last) {
+    const q = last.question;
     return (
       <Card>
         <CardHeader>
@@ -38,10 +39,20 @@ export function VocabQuestion({ question, index, total, onAnswer }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="rounded-md border bg-muted/40 p-3">
+            <p className="text-xs font-medium text-muted-foreground">問題</p>
+            <p className="mt-1 text-sm">{q.prompt}</p>
+          </div>
           <p className="text-sm">あなたの回答: <span className="font-medium">{last.userAnswer}</span></p>
-          <p className="text-sm">正解: <span className="font-medium">{last.question.correct}</span></p>
-          {last.modelAnswer && last.modelAnswer !== last.question.correct && (
+          <p className="text-sm">正解: <span className="font-medium">{q.correct}</span></p>
+          {last.modelAnswer && last.modelAnswer !== q.correct && (
             <p className="text-sm">参考: {last.modelAnswer}</p>
+          )}
+          {q.example && (
+            <div className="rounded-md border bg-amber-50 p-3">
+              <p className="text-xs font-medium text-amber-700">例題（教材より）</p>
+              <p className="mt-1 text-sm">{q.example}</p>
+            </div>
           )}
           {last.feedback && (
             <p className="text-sm text-muted-foreground">{last.feedback}</p>

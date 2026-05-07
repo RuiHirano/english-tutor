@@ -40,6 +40,7 @@ export function Study() {
     const v = searchParams.get('materialId');
     return v ? Number(v) : null;
   })();
+  const overridePhase = searchParams.get('phase') as PhaseName | null;
   const session = useSessionStore();
   const profileStore = useProfileStore();
   const [descriptor, setDescriptor] = useState<PhaseDescriptor | null>(null);
@@ -59,10 +60,18 @@ export function Study() {
     setShadowSessionId(null);
     setShadowDone(false);
     session.abandon();
+    const descriptorPromise: Promise<PhaseDescriptor> =
+      overrideMaterialId !== null && overridePhase !== null
+        ? Promise.resolve({
+            kind: 'phase',
+            materialId: overrideMaterialId,
+            phase: overridePhase,
+          })
+        : overrideMaterialId !== null
+          ? call('db:state.nextForMaterial', { materialId: overrideMaterialId })
+          : call('db:state.next', undefined);
     Promise.all([
-      overrideMaterialId !== null
-        ? call('db:state.nextForMaterial', { materialId: overrideMaterialId })
-        : call('db:state.next', undefined),
+      descriptorPromise,
       profileStore.profile ? Promise.resolve() : profileStore.load(),
     ])
       .then(([d]) => setDescriptor(d))

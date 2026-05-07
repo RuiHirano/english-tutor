@@ -20,9 +20,24 @@ function shuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
-export function buildVocabQueue(items: VocabDue[]): PhaseQuestion[] {
+function findExampleSentence(script: string | undefined, term: string): string | undefined {
+  if (!script || !term) return undefined;
+  const sentences = script
+    .replace(/\n+/g, ' ')
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // 文法パターンは "+" や "~" を含むことがあるので、単語だけ抽出して照合する。
+  const cleaned = term.replace(/[+~()]/g, '').trim();
+  const probe = cleaned.length > 2 ? cleaned : term;
+  const lc = probe.toLowerCase();
+  return sentences.find((s) => s.toLowerCase().includes(lc));
+}
+
+export function buildVocabQueue(items: VocabDue[], script?: string): PhaseQuestion[] {
   const usable = items.filter((i) => i.term && i.meaning);
   return usable.map((item) => {
+    const example = findExampleSentence(script, item.term);
     const kind = pickKindFor(item);
     if (kind === 'vocab.mc') {
       const distractors = shuffle(usable.filter((x) => x.id !== item.id))
@@ -35,6 +50,7 @@ export function buildVocabQueue(items: VocabDue[]): PhaseQuestion[] {
         prompt: `「${item.term}」の意味として最も近いものは？`,
         correct: item.meaning ?? '',
         options,
+        example,
       };
     }
     if (kind === 'vocab.fill') {
@@ -43,6 +59,7 @@ export function buildVocabQueue(items: VocabDue[]): PhaseQuestion[] {
         vocab: item,
         prompt: `次の意味になる英語を入力してください: 「${item.meaning}」`,
         correct: item.term,
+        example,
       };
     }
     return {
@@ -50,6 +67,7 @@ export function buildVocabQueue(items: VocabDue[]): PhaseQuestion[] {
       vocab: item,
       prompt: item.meaning ?? '',
       correct: item.term,
+      example,
     };
   });
 }

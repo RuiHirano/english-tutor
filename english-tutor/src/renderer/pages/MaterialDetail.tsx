@@ -44,7 +44,7 @@ export function MaterialDetail() {
           <CardTitle>学習フローの進捗</CardTitle>
         </CardHeader>
         <CardContent>
-          <PhaseProgress sessions={material.sessions} />
+          <PhaseProgress sessions={material.sessions} materialId={material.id} />
         </CardContent>
       </Card>
 
