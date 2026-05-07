@@ -6,6 +6,7 @@ import { MaterialDetail } from '@/pages/MaterialDetail';
 import { ProfileSetup } from '@/pages/ProfileSetup';
 import { Study } from '@/pages/Study';
 import { VocabList } from '@/pages/VocabList';
+import { LevelTest } from '@/features/level-test/LevelTest';
 
 const router = createHashRouter([
   {
@@ -17,6 +18,7 @@ const router = createHashRouter([
       { path: 'materials', element: <MaterialList /> },
       { path: 'materials/:id', element: <MaterialDetail /> },
       { path: 'vocab', element: <VocabList /> },
+      { path: 'level-test', element: <LevelTest /> },
       { path: 'profile', element: <ProfileSetup /> },
     ],
   },

@@ -1,12 +1,20 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Home as HomeIcon, BookOpen, GraduationCap, ListChecks, UserCog } from 'lucide-react';
+import {
+  Home as HomeIcon,
+  BookOpen,
+  GraduationCap,
+  Gauge,
+  ListChecks,
+  UserCog,
+} from 'lucide-react';
 
 const links = [
   { to: '/', label: 'ホーム', icon: HomeIcon },
   { to: '/study', label: '学習', icon: GraduationCap },
   { to: '/materials', label: '教材', icon: BookOpen },
   { to: '/vocab', label: '学んだ単語', icon: ListChecks },
+  { to: '/level-test', label: 'レベル測定', icon: Gauge },
   { to: '/profile', label: 'プロフィール', icon: UserCog },
 ];
 
