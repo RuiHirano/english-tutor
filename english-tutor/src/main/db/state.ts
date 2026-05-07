@@ -10,8 +10,14 @@ import type {
 import { getDb } from './connection';
 import { listMistakes } from './mistakes';
 
-const DAY1_PHASES: PhaseName[] = ['vocab', 'listening', 'dictation'];
-const DAY2_PHASES: PhaseName[] = ['shadowing', 'speaking', 'retention'];
+const FLOW_PHASES: PhaseName[] = [
+  'vocab',
+  'listening',
+  'dictation',
+  'shadowing',
+  'speaking',
+  'retention',
+];
 
 export function summarize(): LearningState {
   const db = getDb();
@@ -62,39 +68,32 @@ function hoursSince(iso: string | null): number {
   return (Date.now() - t) / 3_600_000;
 }
 
-function lastSessionFor(material: ActiveMaterial, phase: PhaseName): string | null {
-  for (const s of material.recent_sessions) {
-    if (s.phase === phase) return s.started_at;
-  }
-  return null;
+function lastCompletedSession(materialId: number, phase: PhaseName): string | null {
+  const row = getDb()
+    .prepare(
+      `SELECT started_at FROM sessions
+        WHERE material_id = ? AND phase = ? AND ended_at IS NOT NULL
+        ORDER BY started_at DESC LIMIT 1`,
+    )
+    .get(materialId, phase) as { started_at: string } | undefined;
+  return row?.started_at ?? null;
 }
 
-export function decideNextPhase(state: LearningState): PhaseDescriptor {
+export function decideNextPhase(state: LearningState, materialId?: number): PhaseDescriptor {
   if (state.profile_missing) return { kind: 'profile-setup' };
   if (state.active_materials.length === 0) return { kind: 'material-new' };
 
-  const material = state.active_materials[0];
+  const material =
+    (materialId !== undefined &&
+      state.active_materials.find((m) => m.id === materialId)) ||
+    state.active_materials[0];
 
-  if (material.new_vocab_count > 0) {
-    for (const phase of DAY1_PHASES) {
-      const last = lastSessionFor(material, phase);
-      if (!last || hoursSince(last) > 12) {
-        return { kind: 'phase', materialId: material.id, phase };
-      }
-    }
-  }
-
-  const day1Done = DAY1_PHASES.every((p) => lastSessionFor(material, p) !== null);
-  if (day1Done) {
-    const lastShadow = lastSessionFor(material, 'shadowing');
-    if (!lastShadow || hoursSince(lastShadow) > 24) {
-      return { kind: 'phase', materialId: material.id, phase: 'shadowing' };
-    }
-    for (const phase of DAY2_PHASES.slice(1)) {
-      if (!lastSessionFor(material, phase)) {
-        return { kind: 'phase', materialId: material.id, phase };
-      }
-    }
+  // 順次フローでまだ完了していない最初のフェーズを返す。
+  // retention は未解決ミスが無ければスキップ。
+  for (const phase of FLOW_PHASES) {
+    if (lastCompletedSession(material.id, phase)) continue;
+    if (phase === 'retention' && state.mistakes.length === 0) continue;
+    return { kind: 'phase', materialId: material.id, phase };
   }
 
   const allLast = material.recent_sessions[0]?.started_at ?? null;

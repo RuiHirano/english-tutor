@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { GraduationCap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PhaseProgress } from '@/components/shared/PhaseProgress';
 import { call } from '@/lib/api';
 import type { MaterialWithVocab } from '@shared/ipc';
 
 export function MaterialDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [material, setMaterial] = useState<MaterialWithVocab | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,20 +25,37 @@ export function MaterialDetail() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">{material.title}</h2>
-        <p className="text-muted-foreground">
-          習熟度 {material.mastery_level} / 学習回数 {material.total_appearances}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">{material.title}</h2>
+          <p className="text-muted-foreground">
+            習熟度 {material.mastery_level} / 学習回数 {material.total_appearances}
+          </p>
+        </div>
+        <Button onClick={() => navigate(`/study?materialId=${material.id}`)}>
+          <GraduationCap className="mr-1 h-4 w-4" />
+          この教材で学習
+        </Button>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>学習フローの進捗</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PhaseProgress sessions={material.sessions} />
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>スクリプト</CardTitle>
         </CardHeader>
         <CardContent>
-          <pre className="whitespace-pre-wrap text-sm">{material.script}</pre>
+          <pre className="whitespace-pre-wrap text-sm leading-relaxed">{material.script}</pre>
         </CardContent>
       </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>語彙・文法・表現 ({material.vocabulary_items.length})</CardTitle>
@@ -58,6 +79,32 @@ export function MaterialDetail() {
                   <td className="py-1">{v.meaning}</td>
                   <td className="py-1">{v.mastery_level}</td>
                   <td className="py-1">{v.total_appearances}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>セッション履歴 ({material.sessions.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <table className="w-full text-sm">
+            <thead className="text-left text-muted-foreground">
+              <tr>
+                <th className="py-1">phase</th>
+                <th className="py-1">開始</th>
+                <th className="py-1">終了</th>
+              </tr>
+            </thead>
+            <tbody>
+              {material.sessions.map((s) => (
+                <tr key={s.id} className="border-t">
+                  <td className="py-1">{s.phase}</td>
+                  <td className="py-1">{s.started_at}</td>
+                  <td className="py-1">{s.ended_at ?? '—'}</td>
                 </tr>
               ))}
             </tbody>

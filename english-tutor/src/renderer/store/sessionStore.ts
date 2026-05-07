@@ -32,6 +32,7 @@ interface SessionState {
   start: (materialId: number, phase: PhaseName, queue: PhaseQuestion[]) => Promise<void>;
   answer: (userAnswer: string) => Promise<AnswerRecord>;
   finish: () => Promise<void>;
+  abandon: () => Promise<void>;
   reset: () => void;
 }
 
@@ -124,6 +125,20 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     const { sessionId } = get();
     if (sessionId !== null) {
       await call('db:session.close', { sessionId });
+    }
+    set({ sessionId: null });
+  },
+
+  abandon: async () => {
+    const { sessionId, history } = get();
+    // 何問か既に答えていれば「進んだ」とみなしてセッションを正規に閉じる。
+    // 1 問も答えていない場合はセッションを閉じない（次回再開）。
+    if (sessionId !== null && history.length > 0) {
+      try {
+        await call('db:session.close', { sessionId });
+      } catch {
+        /* ignore */
+      }
     }
     set({ sessionId: null });
   },

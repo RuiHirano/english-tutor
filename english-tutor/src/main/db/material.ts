@@ -1,4 +1,4 @@
-import type { Material, VocabItem, VocabItemDraft } from '@shared/types';
+import type { Material, SessionRecord, VocabItem, VocabItemDraft } from '@shared/types';
 import type { CreateMaterialResult, MaterialWithVocab } from '@shared/ipc';
 import { getDb } from './connection';
 
@@ -23,7 +23,10 @@ export function getMaterial(id: number): MaterialWithVocab | null {
   const items = getDb()
     .prepare('SELECT * FROM vocabulary_items WHERE material_id = ? ORDER BY id')
     .all(id) as unknown as VocabItem[];
-  return { ...row, vocabulary_items: items };
+  const sessions = getDb()
+    .prepare('SELECT * FROM sessions WHERE material_id = ? ORDER BY started_at DESC')
+    .all(id) as unknown as SessionRecord[];
+  return { ...row, vocabulary_items: items, sessions };
 }
 
 export function createMaterial(payload: {

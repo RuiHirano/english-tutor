@@ -13,6 +13,7 @@ import type {
   Profile,
   QuestionKind,
   RecordPayload,
+  SessionRecord,
   VocabDue,
   VocabItem,
   VocabItemDraft,
@@ -22,6 +23,7 @@ import type {
 
 export interface MaterialWithVocab extends Material {
   vocabulary_items: VocabItem[];
+  sessions: SessionRecord[];
 }
 
 export interface CreateMaterialResult {
@@ -94,6 +96,7 @@ export interface IpcMap {
   'db:question.record': { req: RecordPayload; res: { questionId: number } };
   'db:state.summarize': { req: void; res: LearningState };
   'db:state.next': { req: void; res: PhaseDescriptor };
+  'db:state.nextForMaterial': { req: { materialId: number }; res: PhaseDescriptor };
   'db:state.activeMaterials': { req: void; res: ActiveMaterial[] };
   'db:stats.overall': { req: void; res: OverallStats };
   'db:stats.daily': { req: { days: number }; res: DailyActivity[] };
@@ -155,6 +158,7 @@ export const IPC_CHANNELS: IpcChannel[] = [
   'db:question.record',
   'db:state.summarize',
   'db:state.next',
+  'db:state.nextForMaterial',
   'db:state.activeMaterials',
   'db:stats.overall',
   'db:stats.daily',

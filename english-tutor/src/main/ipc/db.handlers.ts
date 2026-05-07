@@ -43,6 +43,9 @@ export function registerDbHandlers() {
 
   setHandler('db:state.summarize', () => summarize());
   setHandler('db:state.next', () => decideNextPhase(summarize()));
+  setHandler('db:state.nextForMaterial', ({ materialId }) =>
+    decideNextPhase(summarize(), materialId),
+  );
   setHandler('db:state.activeMaterials', () => listActiveMaterials());
 
   setHandler('db:stats.overall', () => overallStats());

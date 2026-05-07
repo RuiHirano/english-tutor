@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DictationInput } from '@/components/phase/DictationInput';
@@ -8,6 +8,7 @@ import { RetentionPrompt } from '@/components/phase/RetentionPrompt';
 import { ShadowingControl } from '@/components/phase/ShadowingControl';
 import { SpeakingPrompt } from '@/components/phase/SpeakingPrompt';
 import { VocabQuestion } from '@/components/phase/VocabQuestion';
+import { MaterialHeader } from '@/components/shared/MaterialHeader';
 import { VoicePlayer } from '@/components/shared/VoicePlayer';
 import { call } from '@/lib/api';
 import {
@@ -34,6 +35,11 @@ type SupportedPhase =
 
 export function Study() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const overrideMaterialId = (() => {
+    const v = searchParams.get('materialId');
+    return v ? Number(v) : null;
+  })();
   const session = useSessionStore();
   const profileStore = useProfileStore();
   const [descriptor, setDescriptor] = useState<PhaseDescriptor | null>(null);
@@ -43,19 +49,58 @@ export function Study() {
   const [shadowMaterial, setShadowMaterial] = useState<Material | null>(null);
   const [shadowSessionId, setShadowSessionId] = useState<number | null>(null);
   const [shadowDone, setShadowDone] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
+    setError(null);
+    setCompleted(false);
+    setShadowMaterial(null);
+    setShadowSessionId(null);
+    setShadowDone(false);
+    session.abandon();
     Promise.all([
-      call('db:state.next', undefined),
+      overrideMaterialId !== null
+        ? call('db:state.nextForMaterial', { materialId: overrideMaterialId })
+        : call('db:state.next', undefined),
       profileStore.profile ? Promise.resolve() : profileStore.load(),
     ])
       .then(([d]) => setDescriptor(d))
       .catch((e) => setError((e as Error).message));
     return () => {
-      session.reset();
+      session.abandon();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshKey]);
+
+  function goNextPhase() {
+    setRefreshKey((k) => k + 1);
+  }
+
+  async function generateNewMaterial() {
+    if (generating) return;
+    setGenerating(true);
+    setError(null);
+    try {
+      const profile = await call('db:profile.get', undefined);
+      if (!profile) {
+        setError('プロフィール未設定です');
+        return;
+      }
+      const mistakes = await call('db:vocab.mistakes', { limit: 10 });
+      const draft = await call('claude:generateMaterial', { profile, mistakes });
+      await call('db:material.create', {
+        title: draft.title,
+        script: draft.script,
+        items: draft.items,
+      });
+      setRefreshKey((k) => k + 1);
+    } catch (e) {
+      setError(`教材生成に失敗: ${(e as Error).message}`);
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   useEffect(() => {
     if (!descriptor) return;
@@ -143,11 +188,19 @@ export function Study() {
         <h2 className="text-3xl font-bold tracking-tight">学習</h2>
         <Card>
           <CardHeader>
-            <CardTitle>新しい教材が必要です</CardTitle>
+            <CardTitle>このサイクルは完了です</CardTitle>
             <CardDescription>
-              Phase F で実装される「教材生成」を待つか、手動で作成してください。
+              現在の教材は一通り回しました。新しい教材を生成して次のサイクルに進みましょう。
             </CardDescription>
           </CardHeader>
+          <CardContent className="space-x-2">
+            <Button onClick={generateNewMaterial} disabled={generating}>
+              {generating ? '生成中…' : '新しい教材を生成'}
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/')}>
+              ホームへ
+            </Button>
+          </CardContent>
         </Card>
       </div>
     );
@@ -169,9 +222,13 @@ export function Study() {
 
   if (loadingQueue) {
     return (
-      <div>
+      <div className="space-y-4">
         <h2 className="text-3xl font-bold tracking-tight">{PHASE_LABELS_JA[descriptor.phase]}</h2>
-        <p className="text-muted-foreground mt-2">問題を準備中…</p>
+        <MaterialHeader materialId={descriptor.materialId} />
+        {descriptor.phase === 'listening' && (
+          <ListeningPlaybackHeader materialId={descriptor.materialId} />
+        )}
+        <p className="text-muted-foreground">問題を準備中…</p>
       </div>
     );
   }
@@ -183,13 +240,19 @@ export function Study() {
       return (
         <div className="space-y-4">
           <h2 className="text-3xl font-bold tracking-tight">シャドーイング完了</h2>
-          <Button onClick={() => navigate('/')}>ホームへ</Button>
+          <div className="flex gap-2">
+            <Button onClick={goNextPhase}>次のフェーズへ</Button>
+            <Button variant="outline" onClick={() => navigate('/')}>
+              ホームへ
+            </Button>
+          </div>
         </div>
       );
     }
     return (
       <div className="space-y-4">
         <h2 className="text-3xl font-bold tracking-tight">{PHASE_LABELS_JA.shadowing}</h2>
+        <MaterialHeader materialId={shadowMaterial.id} hideScript />
         <ShadowingControl
           material={shadowMaterial}
           sessionId={shadowSessionId}
@@ -213,8 +276,11 @@ export function Study() {
               {correct} / {session.history.length} 正解
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate('/')}>ホームへ</Button>
+          <CardContent className="space-x-2">
+            <Button onClick={goNextPhase}>次のフェーズへ</Button>
+            <Button variant="outline" onClick={() => navigate('/')}>
+              ホームへ
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -235,10 +301,8 @@ export function Study() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">{PHASE_LABELS_JA[descriptor.phase]}</h2>
-        <p className="text-muted-foreground">教材 #{descriptor.materialId}</p>
-      </div>
+      <h2 className="text-3xl font-bold tracking-tight">{PHASE_LABELS_JA[descriptor.phase]}</h2>
+      <MaterialHeader materialId={descriptor.materialId} />
       {descriptor.phase === 'listening' && (
         <ListeningPlaybackHeader materialId={descriptor.materialId} />
       )}
