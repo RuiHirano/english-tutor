@@ -26,6 +26,11 @@ export interface MaterialWithVocab extends Material {
   sessions: SessionRecord[];
 }
 
+export interface MaterialWithProgress extends Material {
+  completed_phases: string[];
+  vocab_count: number;
+}
+
 export interface CreateMaterialResult {
   materialId: number;
   vocabularyItemIds: number[];
@@ -79,6 +84,10 @@ export interface IpcMap {
   'db:profile.get': { req: void; res: Profile | null };
   'db:profile.upsert': { req: Profile; res: Profile };
   'db:material.list': { req: { activeOnly?: boolean }; res: Material[] };
+  'db:material.listWithProgress': {
+    req: { activeOnly?: boolean };
+    res: MaterialWithProgress[];
+  };
   'db:material.get': { req: { id: number }; res: MaterialWithVocab | null };
   'db:material.create': {
     req: { title: string; script: string; script_ja?: string; items: VocabItemDraft[] };
@@ -147,6 +156,7 @@ export const IPC_CHANNELS: IpcChannel[] = [
   'db:profile.get',
   'db:profile.upsert',
   'db:material.list',
+  'db:material.listWithProgress',
   'db:material.get',
   'db:material.create',
   'db:material.setMastery',

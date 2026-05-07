@@ -4,6 +4,7 @@ import {
   createMaterial,
   getMaterial,
   listMaterials,
+  listMaterialsWithProgress,
   setMaterialMastery,
 } from '@main/db/material';
 import { pickDue } from '@main/db/due';
@@ -19,6 +20,9 @@ export function registerDbHandlers() {
   setHandler('db:profile.upsert', (p) => upsertProfile(p));
 
   setHandler('db:material.list', ({ activeOnly }) => listMaterials(activeOnly));
+  setHandler('db:material.listWithProgress', ({ activeOnly }) =>
+    listMaterialsWithProgress(activeOnly),
+  );
   setHandler('db:material.get', ({ id }) => getMaterial(id));
   setHandler('db:material.create', (p) => createMaterial(p));
   setHandler('db:material.setMastery', ({ id, level }) => {

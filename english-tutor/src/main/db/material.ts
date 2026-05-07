@@ -99,6 +99,37 @@ export function createMaterial(payload: {
   return { materialId, vocabularyItemIds: itemIds };
 }
 
+export interface MaterialWithProgress extends Material {
+  completed_phases: string[];
+  vocab_count: number;
+}
+
+export function listMaterialsWithProgress(activeOnly = false): MaterialWithProgress[] {
+  const where = activeOnly ? 'WHERE m.mastery_level < 3' : '';
+  const rows = getDb()
+    .prepare(
+      `SELECT m.id, m.title, m.script, m.script_ja,
+              m.total_appearances, m.last_appeared_at, m.mastery_level,
+              m.started_at, m.ended_at, m.created_at,
+              (SELECT GROUP_CONCAT(DISTINCT s.phase)
+                 FROM sessions s
+                WHERE s.material_id = m.id AND s.ended_at IS NOT NULL) AS completed_phases_csv,
+              (SELECT COUNT(*) FROM vocabulary_items WHERE material_id = m.id) AS vocab_count
+         FROM materials m
+         ${where}
+        ORDER BY (m.last_appeared_at IS NULL), m.last_appeared_at DESC, m.created_at DESC`,
+    )
+    .all() as unknown as Array<
+      Material & { completed_phases_csv: string | null; vocab_count: number }
+    >;
+
+  return rows.map(({ completed_phases_csv, vocab_count, ...m }) => ({
+    ...m,
+    completed_phases: completed_phases_csv ? completed_phases_csv.split(',').filter(Boolean) : [],
+    vocab_count,
+  }));
+}
+
 export function setMaterialMastery(id: number, level: number): void {
   const db = getDb();
   if (level >= 3) {
