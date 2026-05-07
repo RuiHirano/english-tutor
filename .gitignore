@@ -1,8 +1,13 @@
 data/*
 !data/.gitkeep
 
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
+# Electron / Node
+node_modules/
+.vite/
+out/
+dist/
+*.log
 .env
+
+# macOS
+.DS_Store

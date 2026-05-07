@@ -1,0 +1,20 @@
+import { defineConfig } from 'vite';
+import path from 'node:path';
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@main': path.resolve(__dirname, 'src/main'),
+      '@shared': path.resolve(__dirname, 'src/shared'),
+    },
+  },
+  build: {
+    rollupOptions: {
+      external: ['electron', 'node:sqlite', /^node:.*/],
+      output: {
+        entryFileNames: '[name].js',
+        chunkFileNames: '[name].js',
+      },
+    },
+  },
+});
