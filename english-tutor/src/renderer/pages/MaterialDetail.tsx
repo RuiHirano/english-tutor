@@ -60,6 +60,17 @@ export function MaterialDetail() {
         </CardContent>
       </Card>
 
+      {material.script_ja && (
+        <Card>
+          <CardHeader>
+            <CardTitle>日本語訳</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="whitespace-pre-wrap text-sm leading-relaxed">{material.script_ja}</pre>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>語彙・文法・表現 ({material.vocabulary_items.length})</CardTitle>

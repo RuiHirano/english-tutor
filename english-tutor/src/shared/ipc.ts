@@ -81,7 +81,7 @@ export interface IpcMap {
   'db:material.list': { req: { activeOnly?: boolean }; res: Material[] };
   'db:material.get': { req: { id: number }; res: MaterialWithVocab | null };
   'db:material.create': {
-    req: { title: string; script: string; items: VocabItemDraft[] };
+    req: { title: string; script: string; script_ja?: string; items: VocabItemDraft[] };
     res: CreateMaterialResult;
   };
   'db:material.setMastery': { req: { id: number; level: MasteryLevel }; res: void };

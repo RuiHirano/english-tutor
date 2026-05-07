@@ -32,6 +32,7 @@ export function getMaterial(id: number): MaterialWithVocab | null {
 export function createMaterial(payload: {
   title: string;
   script: string;
+  script_ja?: string;
   items: VocabItemDraft[];
 }): CreateMaterialResult {
   const db = getDb();
@@ -39,8 +40,10 @@ export function createMaterial(payload: {
   const itemIds: number[] = [];
   db.exec('BEGIN');
   try {
-    const ins = db.prepare('INSERT INTO materials (title, script) VALUES (?, ?)');
-    const result = ins.run(payload.title, payload.script);
+    const ins = db.prepare(
+      'INSERT INTO materials (title, script, script_ja) VALUES (?, ?, ?)',
+    );
+    const result = ins.run(payload.title, payload.script, payload.script_ja ?? null);
     materialId = Number(result.lastInsertRowid);
 
     const insItem = db.prepare(

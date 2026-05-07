@@ -33,6 +33,7 @@ export function MaterialList() {
       const created = await call('db:material.create', {
         title: draft.title,
         script: draft.script,
+        script_ja: draft.script_ja,
         items: draft.items,
       });
       setGenStatus(

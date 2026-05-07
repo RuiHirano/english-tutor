@@ -21,6 +21,23 @@ function resolveDbPath(): string {
   return userDb;
 }
 
+function ensureColumn(
+  database: DatabaseSync,
+  table: string,
+  column: string,
+  ddl: string,
+): void {
+  const cols = database
+    .prepare(`PRAGMA table_info(${table})`)
+    .all() as Array<{ name: string }>;
+  if (cols.some((c) => c.name === column)) return;
+  database.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+}
+
+function migrate(database: DatabaseSync): void {
+  ensureColumn(database, 'materials', 'script_ja', 'script_ja TEXT');
+}
+
 function backfillMastery(database: DatabaseSync): void {
   // 過去に正解しているのに mastery_level = 0 のままのアイテムを 認識 (1) に昇格。
   // 自動昇格ロジック追加前に蓄積した記録への一回限りの整合化。idempotent。
@@ -43,6 +60,7 @@ export function getDb(): DatabaseSync {
   db = new DatabaseSync(dbPath);
   db.exec('PRAGMA foreign_keys = ON');
   db.exec(schemaSql);
+  migrate(db);
   backfillMastery(db);
   return db;
 }

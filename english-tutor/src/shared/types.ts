@@ -37,6 +37,7 @@ export interface Material {
   id: number;
   title: string;
   script: string;
+  script_ja: string | null;
   total_appearances: number;
   last_appeared_at: string | null;
   mastery_level: MasteryLevel;
@@ -122,6 +123,7 @@ export interface VocabItemDraft {
 export interface MaterialDraft {
   title: string;
   script: string;
+  script_ja: string;
   items: VocabItemDraft[];
 }
 

@@ -50,6 +50,7 @@ export async function evaluateRetention(input: {
 const MaterialDraftSchema = z.object({
   title: z.string(),
   script: z.string(),
+  script_ja: z.string(),
   items: z
     .array(
       z.object({
