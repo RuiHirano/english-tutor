@@ -58,7 +58,7 @@ export function ListeningQuestion({ question, index, total, onAnswer }: Props) {
         <CardTitle className="text-xl">{question.prompt}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {meta.audio && <VoicePlayer text={meta.audio} label="再生（教材）" />}
+        {meta.audio && <VoicePlayer text={meta.audio} rates={[1, 0.8]} />}
         <div className="grid grid-cols-1 gap-2">
           {options.map((opt) => (
             <Button

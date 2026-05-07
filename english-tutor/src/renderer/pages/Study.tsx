@@ -373,7 +373,7 @@ function ListeningPlaybackHeader({ materialId }: { materialId: number }) {
         <CardDescription>2〜3 回聞いて、内容を把握してから問題に進んでください</CardDescription>
       </CardHeader>
       <CardContent>
-        <VoicePlayer text={script} label="スクリプト再生" />
+        <VoicePlayer text={script} rates={[1, 0.8]} />
       </CardContent>
     </Card>
   );
