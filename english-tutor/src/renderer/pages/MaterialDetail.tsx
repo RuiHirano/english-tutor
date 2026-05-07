@@ -4,6 +4,7 @@ import { GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PhaseProgress } from '@/components/shared/PhaseProgress';
+import { VoicePlayer } from '@/components/shared/VoicePlayer';
 import { call } from '@/lib/api';
 import type { MaterialWithVocab } from '@shared/ipc';
 
@@ -49,7 +50,10 @@ export function MaterialDetail() {
 
       <Card>
         <CardHeader>
-          <CardTitle>スクリプト</CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle>スクリプト</CardTitle>
+            <VoicePlayer text={material.script} label="再生" />
+          </div>
         </CardHeader>
         <CardContent>
           <pre className="whitespace-pre-wrap text-sm leading-relaxed">{material.script}</pre>
