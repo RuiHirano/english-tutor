@@ -36,7 +36,7 @@ export function RetentionPrompt({ question, index, total, onAnswer }: Props) {
         <CardHeader>
           <CardDescription>問題 {index + 1} / {total} — フィードバック</CardDescription>
           <CardTitle className={last.isCorrect ? 'text-green-600' : 'text-destructive'}>
-            {last.isCorrect ? '回収成功' : '再挑戦推奨'}
+            {last.isCorrect ? 'OK' : '再挑戦推奨'}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">

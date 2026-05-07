@@ -10,8 +10,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { call } from '@/lib/api';
 import type { DailyActivity, MasteryDistribution, OverallStats } from '@shared/types';
@@ -26,36 +24,6 @@ interface Stats {
 export function Home() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [genStatus, setGenStatus] = useState<string | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
-
-  async function generate() {
-    setGenerating(true);
-    setGenStatus('Claude に教材生成を依頼中…');
-    try {
-      const profile = await call('db:profile.get', undefined);
-      if (!profile) {
-        setGenStatus('プロフィール未設定。先にプロフィールを保存してください。');
-        return;
-      }
-      const mistakes = await call('db:vocab.mistakes', { limit: 10 });
-      const draft = await call('claude:generateMaterial', { profile, mistakes });
-      const created = await call('db:material.create', {
-        title: draft.title,
-        script: draft.script,
-        items: draft.items,
-      });
-      setGenStatus(
-        `生成完了: 「${draft.title}」 (#${created.materialId}) — vocab ${created.vocabularyItemIds.length} 件`,
-      );
-      setReloadKey((k) => k + 1);
-    } catch (e) {
-      setGenStatus(`失敗: ${(e as Error).message}`);
-    } finally {
-      setGenerating(false);
-    }
-  }
 
   useEffect(() => {
     (async () => {
@@ -71,7 +39,7 @@ export function Home() {
         setError((e as Error).message);
       }
     })();
-  }, [reloadKey]);
+  }, []);
 
   if (error) {
     return (
@@ -96,22 +64,10 @@ export function Home() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">ホーム</h2>
-          <p className="text-muted-foreground">学習状況のサマリ</p>
-        </div>
-        <Button onClick={generate} disabled={generating}>
-          <Sparkles className="mr-1 h-4 w-4" />
-          {generating ? '生成中…' : '新しい教材を生成'}
-        </Button>
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">ホーム</h2>
+        <p className="text-muted-foreground">学習状況のサマリ</p>
       </div>
-
-      {genStatus && (
-        <Card>
-          <CardContent className="py-3 text-sm text-muted-foreground">{genStatus}</CardContent>
-        </Card>
-      )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="教材数" value={overall.total_materials} />
