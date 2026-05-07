@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ReviewIndicator } from '@/components/shared/ReviewIndicator';
 import { cn } from '@/lib/utils';
 import { call } from '@/lib/api';
 import type { MasteryLevel, VocabDue } from '@shared/types';
@@ -82,6 +83,14 @@ export function VocabList() {
         </p>
       </div>
 
+      <div className="flex flex-wrap items-center gap-4 rounded-lg border bg-muted/40 px-4 py-2 text-xs">
+        <span className="font-medium text-muted-foreground">復習スコア:</span>
+        <ReviewIndicator score={1e9} />
+        <ReviewIndicator score={1} />
+        <ReviewIndicator score={-0.5} />
+        <ReviewIndicator score={-2} />
+      </div>
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {LEVELS.map(({ level, label, badge }) => (
           <div
@@ -127,7 +136,7 @@ export function VocabList() {
                     <th className="py-1 pr-2">term</th>
                     <th className="py-1 pr-2">meaning</th>
                     <th className="py-1 pr-2">出現回数</th>
-                    <th className="py-1 pr-2">due</th>
+                    <th className="py-1 pr-2">復習</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -141,8 +150,8 @@ export function VocabList() {
                       <td className="py-1 pr-2 font-medium">{v.term}</td>
                       <td className="py-1 pr-2 text-muted-foreground">{v.meaning}</td>
                       <td className="py-1 pr-2 tabular-nums">{v.total_appearances}</td>
-                      <td className="py-1 pr-2 tabular-nums text-xs text-muted-foreground">
-                        {v.due_score >= 1e8 ? '新規' : v.due_score.toFixed(2)}
+                      <td className="py-1 pr-2">
+                        <ReviewIndicator score={v.due_score} />
                       </td>
                     </tr>
                   ))}
